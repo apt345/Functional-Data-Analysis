@@ -1,0 +1,248 @@
+---
+title: "Assignment1"
+author: "Arturo Prieto Tirado"
+date: "20/4/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE)
+```
+
+
+```{r}
+library(fda)
+data(gait)
+color_1 <- "deepskyblue2"
+color_2 <- "darkorange2"
+color_3 <- "darkorchid2"
+```
+
+2.
+
+The object gait is an array of size 20x39x2 containing the hip and knee angle in degrees through a 20 point movement cycle for 39 boys. Carry out the following tasks and write a report summarizing your work:
+
+
+- (a) Make a plot of the hip angles for the first three boys using points and explain the main characteristics of the three hip angles.
+
+```{r}
+hipboy1=gait[,1,1]
+hipboy2=gait[,2,1]
+hipboy3=gait[,3,1]
+
+plot(hipboy1, ylab = "Hip angle (degrees)", col = "green", ylim = c(-5,55))
+points(hipboy2, col = "red")
+points(hipboy3, col = "blue")
+legend("bottomright", legend=c("Boy 1", "Boy 2", "Boy 3"),
+       col=c("green", "red", "blue"), pch=1, cex=0.8)
+```
+
+It can be seen that the general shape is similar for all of them, which suggest that there is a function governing hip angle. There are however individual differences since their amplitudes differ. Boy 1 has the smallest movility range while Boy 3 has the greatest. Also, there are negative angles.
+
+
+
+
+- (b) Make a plot of all the hip angles using lines and explain their main characteristics.
+
+We simply interpolate the points to build the lines
+```{r}
+matplot(gait[,1:39,1], type="l", lty=1, xlab = "Movement Index", ylab = "Hip Angle (degrees)")
+
+```
+
+
+- (c) Smooth the hip angles corresponding to the first boy with OLS and penalized smoothing with a basis function system of your (appropriate) choice. Describe all the steps taken in your analysis with explanations and appropriate graphs.
+
+Now we want to smooth the results just for the first boy. The way one smooths is by doing a basis expansion. I will use the Fourier basis. Knowing the basis functions one can just fit them appropiately to the data. However, it is first necessary to know the number K of basis functions we want to use, because there are an infinite number of them. In order to do this, Cross Validation can be used to find K minimizing the sum of squares. In order to reduced computational costs, Generalized Cross Validation is faster. The problem with this method is that it tends to select a very high number of basis functions, thus basically interpolating the data or creating very rough (not smoothed) curves. The approach that solves this is penalized smoothing, that penalizes high values of $K$ by a factor of lambda, that one needs to optimize as well.
+
+
+The goal here is to smooth the hip angle in the $39$ boys with **Fourier basis**. Initially, we focus first in smoothing the first boy in the data set, St. Johns. To see the effect of the value of $K$ in the curve estimate, we consider four different number of basis functions, $K=7$, $11$, $15$ and $19$. Remember that the number of Fourier basis functions should be an odd number and it has to be smaller than the number of points per boy, so 20.
+
+For that, the first step is to **create the four Fourier basis systems** using the `fda` package.  This is done using the function `create.fourier.basis`. The observation interval is $[1,20]$.
+
+```{r}
+interval=c(1,20)
+fourier_basis_7 <- create.fourier.basis(rangeval=interval,nbasis=7)
+fourier_basis_11 <- create.fourier.basis(rangeval=interval,nbasis=11)
+fourier_basis_15 <- create.fourier.basis(rangeval=interval,nbasis=15)
+fourier_basis_19 <- create.fourier.basis(rangeval=interval,nbasis=19)
+```
+
+The second step is to **smooth the hip angle for the first boy with OLS** and the four Fourier basis systems. This is done using the function `smooth.basis`. Here, the observation points are $1$ to $20$, corresponding to each movement position.
+
+```{r }
+obs_points=1:20
+smooth_hipboy1_7 <- smooth.basis(argvals=obs_points,y=hipboy1,
+                                       fdParobj=fourier_basis_7)
+smooth_hipboy1_11 <- smooth.basis(argvals=obs_points,y=hipboy1,
+                                       fdParobj=fourier_basis_11)
+smooth_hipboy1_15 <- smooth.basis(argvals=obs_points,y=hipboy1,
+                                       fdParobj=fourier_basis_15)
+smooth_hipboy1_19 <- smooth.basis(argvals=obs_points,y=hipboy1,
+                                       fdParobj=fourier_basis_19)
+```
+
+Next, we see the four fittings. For that, we plot the observed points and the corresponding smoothings with the four Fourier basis. Clearly, **the larger the number of Fourier basis, the more overfitted is the data**. In other words, the more basis functions the less smooth are the functions obtained.
+
+```{r }
+plot(obs_points,hipboy1,pch=20,col=color_1,
+     main="Smoothing with OLS with 7 Fourier basis functions",xlab="Index",ylab="Hip Angle (degrees)")
+lines(smooth_hipboy1_7,lty=1,lwd=3,col=color_2)
+plot(obs_points,hipboy1,pch=20,col=color_1,
+     main="Smoothing with OLS with 11 Fourier basis functions",xlab="Index",ylab="Hip Angle (degrees)")
+lines(smooth_hipboy1_11,lty=1,lwd=3,col=color_2)
+plot(obs_points,hipboy1,pch=20,col=color_1,
+     main="Smoothing with OLS with 15 Fourier basis functions",xlab="Index",ylab="Hip Angle (degrees)")
+lines(smooth_hipboy1_15,lty=1,lwd=3,col=color_2)
+plot(obs_points,hipboy1,pch=20,col=color_1,
+     main="Smoothing with OLS with 19 Fourier basis functions",xlab="Index",ylab="Hip Angle (degrees)")
+lines(smooth_hipboy1_19,lty=1,lwd=3,col=color_2)
+```
+
+Additionally, we plot the four sets of residuals after the smoothings. Residuals are helpful to see whether there are fitting problems. Here, apparently there are no severe problems, but taking into account the seasonal structure of the data, probably the residuals are autocorrelated. Of course, more tools can be used to check the model fitting, but it is better to move to smoothing with roughness penalties where the value of $K$ will not be so relevant.
+
+```{r }
+plot(obs_points,residuals(smooth_hipboy1_7),pch=20,col=color_1,
+     main="Residuals with 7 basis functions",xlab="Day",ylab="Temperature")
+plot(obs_points,residuals(smooth_hipboy1_11),pch=20,col=color_1,
+     main="Residuals with 11 basis functions",xlab="Day",ylab="Temperature")
+plot(obs_points,residuals(smooth_hipboy1_15),pch=20,col=color_1,
+     main="Residuals with 15 basis functions",xlab="Day",ylab="Temperature")
+plot(obs_points,residuals(smooth_hipboy1_19),pch=20,col=color_1,
+     main="Residuals with 19 basis functions",xlab="Day",ylab="Temperature")
+```
+
+Now, we focus on the selection of $K$. For the previous fittings, it is easy to check that for St. Johns **the larger K, the smaller the GCV**.
+
+```{r gcvfourier}
+smooth_hipboy1_7$gcv
+smooth_hipboy1_11$gcv
+smooth_hipboy1_15$gcv
+smooth_hipboy1_19$gcv
+```
+
+For the whole data set, we are going to compute the value of the GCV criterion for a large selection of values of $k$, all odd from $3$ to $101$, and we will see which is the behavior of the GCV criterion for the candidate values of $k$.
+
+```{r }
+k_min <- 3
+k_max <- 20
+k_can <- seq(k_min,k_max,by=2)
+gcv_k <- vector(mode="numeric",length=length(k_can))
+i <- 0
+for (k in k_can){
+  i <- i + 1
+  fourier_basis_k <- create.fourier.basis(rangeval=c(0,20),nbasis=k)
+  smooth_dailyAv_temp_k <- 
+    smooth.basis(argvals=1:20,y=hipboy1,fdParobj=fourier_basis_k)
+  gcv_k[i] <- mean(smooth_dailyAv_temp_k$gcv)
+}
+plot(k_can,gcv_k,pch=19,col=color_1,main="GCV criterion for OLS",xlab="k",ylab="Value of GCV")  
+```
+
+The plot shows the values of the GCV criterion decreases when $k$ increases, as expected. Thus, the GCV method will select a number of Fourier basis functions very large that leads to rough temperature curves. This is the main motivation of using smoothing with roughness penalties, that will be seen in the next section.
+
+It can also be seen that it increases for very large $k$ since we only have 20 points, so k=20 interpolates and k close to 20 nearly interpolates, which is not optimal when predicting new sample, which CV does.
+
+
+
+
+
+- (d) Smooth all the hip angles with OLS and penalized smoothing with a basis function system of your (appropriate) choice. Describe all the steps taken in your analysis with explanations and appropriate graphs.
+
+
+
+
+
+-(e) Obtain conclusions on the data set based on the analyses performed.
+
+
+
+
+
+
+
+
+
+
+4. A few theoretical exercises about square integrable functions:
+
+- (a) Prove the triangle inequality using the Cauchy-Schwarz inequality.
+
+Let's just start with the Triangle inequality
+$$\|f+g\| \leq\|f\|+\|g\|$$
+where $f, g \in L^{2}[a, b]$ and square it
+
+$$
+\|f+g\|^2 \leq(\|f\|+\|g\|)^2
+$$
+
+Now expand the result
+$$
+\|f\|^2+\|g\|^2+2\langle f,g\rangle \leq \|f\|^2+\|g\|^2 +2\|f\|\|g\|
+$$
+
+Simplifying, one gets $$|\langle f, g\rangle| \leq\|f\|\|g\|$$ which is precisely the Cauchy-Schwarz inequality. Since the Cauchy-Schwarz inequality is true, it follows that the Triangle inequality is also true.
+
+- (b) Prove the fourth line of slide 22.
+
+We want to prove that if $f,g \in L^2[a,b]$ then for $c_1, c_2 \in \mathbb{R}$ it holds that $c_1f+c_2g \in L^2[a,b]$. The definition of a function being square integrable is that
+$$
+f \in L^2[a,b] \iff \int_a^b f^2(t)dt<\infty
+$$
+We would like to check whether $c_1f+c_2g \in L^2[a,b]$ which is equivalent to check that
+$$
+\int_a^b (c_1f(t)+c_2g(t))^2dt=c_1^2\int_a^bf(t)^2dt+c_2^2\int_a^bg(t)^2dt+2c_1c_2\int_a^bf(t)g(t)dt\stackrel{?}{\leq}\infty
+$$
+
+Since by hypothesis $f,g \in L^2[a,b]$, the two first integrals are bounded so the only thing left to check is 
+$$
+\int_a^bf(t)g(t)dt\stackrel{?}{\leq}\infty
+$$
+
+Remember that $\int_a^bf(t)g(t)dt=\langle f,g\rangle$ and therefore using the Cauchy Schwarz inequality we have that
+$$
+\int_a^bf(t)g(t)dt\leq \|f\|\|g\| \leq\infty \text{ since } f,g\in L^2[a.b]
+$$
+
+Therefore
+
+$$
+\int_a^b (c_1f(t)+c_2g(t))^2dt\leq \infty
+$$
+which means that $c_1f+c_2g \in L^2[a,b]$, as we wanted to prove.
+
+- (c) Prove the fourth line of slide 23.
+
+We want to prove that if $e_1, e_2,..., \in L^2[a,b]$ are an orthonormal basis then $c_k=\langle f, e_k\rangle$. In order to prove this recall that any function $f \in L^2[a,b]$ admits a unique expansion as $f=\sum_k^\infty c_k e_k$ and that an orthonormal basis implies that $\langle e_k, e_l\rangle=0$ for $k\neq l$.
+
+Let's then expand $\langle f, e_k \rangle$ as
+
+$$
+\langle f, e_k \rangle=\langle \sum_l^\infty c_le_l, e_k\rangle
+$$
+
+Use the fact that the inner product has the linearity property $\langle x+y,w \rangle=\langle x,w \rangle+\langle y, w\rangle$ to take out the sumation and use that the basis is orthonormal to find the desired result
+$$
+ \langle f, e_k \rangle=\sum_l^\infty\langle c_le_l, e_k\rangle=c_k
+$$
+- (d) Prove the Parceval's inequality.
+
+We want to prove that 
+$$
+\|f\|^2=\sum_k^\infty c_k^2
+$$
+
+
+
+
+Since $f=\sum_k^\infty c_k e_k$ it is clear that
+
+$$
+\|f\|^2=\langle f, f\rangle=\langle \sum_k^\infty c_ke_k, \sum_l^\infty c_le_l\rangle
+$$
+
+Using the linearity property of the inner product and the orthonormality of the basis yields the Parceval's inequality
+
+$$
+\|f\|^2=\sum_k^\infty \sum_l^\infty\langle  c_ke_k,  c_le_l\rangle=\sum_k^\infty c_k^2
+$$
