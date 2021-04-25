@@ -56,16 +56,16 @@ matplot(gait[,1:39,1], type="l", lty=1, xlab = "Movement Index", ylab = "Hip Ang
 Now we want to smooth the results just for the first boy. The way one smooths is by doing a basis expansion. I will use the Fourier basis. Knowing the basis functions one can just fit them appropiately to the data. However, it is first necessary to know the number K of basis functions we want to use, because there are an infinite number of them. In order to do this, Cross Validation can be used to find K minimizing the sum of squares. In order to reduced computational costs, Generalized Cross Validation is faster. The problem with this method is that it tends to select a very high number of basis functions, thus basically interpolating the data or creating very rough (not smoothed) curves. The approach that solves this is penalized smoothing, that penalizes high values of $K$ by a factor of lambda, that one needs to optimize as well.
 
 
-The goal here is to smooth the hip angle in the $39$ boys with **Fourier basis**. Initially, we focus first in smoothing the first boy in the data set, St. Johns. To see the effect of the value of $K$ in the curve estimate, we consider four different number of basis functions, $K=7$, $11$, $15$ and $19$. Remember that the number of Fourier basis functions should be an odd number and it has to be smaller than the number of points per boy, so 20.
+The goal here is to smooth the hip angle in the $39$ boys with **Fourier basis**. Initially, we focus first in smoothing the first boy in the data set, St. Johns. To see the effect of the value of $K$ in the curve estimate, we consider four different number of basis functions, $K=3$, $5$, $7$ and $9$. Remember that the number of Fourier basis functions should be an odd number and it has to be smaller than the number of points per boy, so 20. The closer to 20, the more overfitting
 
 For that, the first step is to **create the four Fourier basis systems** using the `fda` package.  This is done using the function `create.fourier.basis`. The observation interval is $[1,20]$.
 
 ```{r}
 interval=c(1,20)
+fourier_basis_3 <- create.fourier.basis(rangeval=interval,nbasis=3)
+fourier_basis_5 <- create.fourier.basis(rangeval=interval,nbasis=5)
 fourier_basis_7 <- create.fourier.basis(rangeval=interval,nbasis=7)
-fourier_basis_11 <- create.fourier.basis(rangeval=interval,nbasis=11)
-fourier_basis_15 <- create.fourier.basis(rangeval=interval,nbasis=15)
-fourier_basis_19 <- create.fourier.basis(rangeval=interval,nbasis=19)
+fourier_basis_9 <- create.fourier.basis(rangeval=interval,nbasis=9)
 ```
 
 The second step is to **smooth the hip angle for the first boy with OLS** and the four Fourier basis systems. This is done using the function `smooth.basis`. Here, the observation points are $1$ to $20$, corresponding to each movement position.
@@ -73,29 +73,29 @@ The second step is to **smooth the hip angle for the first boy with OLS** and th
 ```{r }
 obs_points=1:20
 smooth_hipboy1_7 <- smooth.basis(argvals=obs_points,y=hipboy1,
-                                       fdParobj=fourier_basis_7)
+                                       fdParobj=fourier_basis_3)
 smooth_hipboy1_11 <- smooth.basis(argvals=obs_points,y=hipboy1,
-                                       fdParobj=fourier_basis_11)
+                                       fdParobj=fourier_basis_5)
 smooth_hipboy1_15 <- smooth.basis(argvals=obs_points,y=hipboy1,
-                                       fdParobj=fourier_basis_15)
+                                       fdParobj=fourier_basis_7)
 smooth_hipboy1_19 <- smooth.basis(argvals=obs_points,y=hipboy1,
-                                       fdParobj=fourier_basis_19)
+                                       fdParobj=fourier_basis_9)
 ```
 
 Next, we see the four fittings. For that, we plot the observed points and the corresponding smoothings with the four Fourier basis. Clearly, **the larger the number of Fourier basis, the more overfitted is the data**. In other words, the more basis functions the less smooth are the functions obtained.
 
 ```{r }
 plot(obs_points,hipboy1,pch=20,col=color_1,
-     main="Smoothing with OLS with 7 Fourier basis functions",xlab="Index",ylab="Hip Angle (degrees)")
+     main="Smoothing with OLS with 3 Fourier basis functions",xlab="Index",ylab="Hip Angle (degrees)")
 lines(smooth_hipboy1_7,lty=1,lwd=3,col=color_2)
 plot(obs_points,hipboy1,pch=20,col=color_1,
-     main="Smoothing with OLS with 11 Fourier basis functions",xlab="Index",ylab="Hip Angle (degrees)")
+     main="Smoothing with OLS with 5 Fourier basis functions",xlab="Index",ylab="Hip Angle (degrees)")
 lines(smooth_hipboy1_11,lty=1,lwd=3,col=color_2)
 plot(obs_points,hipboy1,pch=20,col=color_1,
-     main="Smoothing with OLS with 15 Fourier basis functions",xlab="Index",ylab="Hip Angle (degrees)")
+     main="Smoothing with OLS with 7 Fourier basis functions",xlab="Index",ylab="Hip Angle (degrees)")
 lines(smooth_hipboy1_15,lty=1,lwd=3,col=color_2)
 plot(obs_points,hipboy1,pch=20,col=color_1,
-     main="Smoothing with OLS with 19 Fourier basis functions",xlab="Index",ylab="Hip Angle (degrees)")
+     main="Smoothing with OLS with 9 Fourier basis functions",xlab="Index",ylab="Hip Angle (degrees)")
 lines(smooth_hipboy1_19,lty=1,lwd=3,col=color_2)
 ```
 
@@ -103,13 +103,13 @@ Additionally, we plot the four sets of residuals after the smoothings. Residuals
 
 ```{r }
 plot(obs_points,residuals(smooth_hipboy1_7),pch=20,col=color_1,
-     main="Residuals with 7 basis functions",xlab="Day",ylab="Temperature")
+     main="Residuals with 3 basis functions",xlab="Day",ylab="Temperature")
 plot(obs_points,residuals(smooth_hipboy1_11),pch=20,col=color_1,
-     main="Residuals with 11 basis functions",xlab="Day",ylab="Temperature")
+     main="Residuals with 5 basis functions",xlab="Day",ylab="Temperature")
 plot(obs_points,residuals(smooth_hipboy1_15),pch=20,col=color_1,
-     main="Residuals with 15 basis functions",xlab="Day",ylab="Temperature")
+     main="Residuals with 7 basis functions",xlab="Day",ylab="Temperature")
 plot(obs_points,residuals(smooth_hipboy1_19),pch=20,col=color_1,
-     main="Residuals with 19 basis functions",xlab="Day",ylab="Temperature")
+     main="Residuals with 9 basis functions",xlab="Day",ylab="Temperature")
 ```
 
 Now, we focus on the selection of $K$. For the previous fittings, it is easy to check that for St. Johns **the larger K, the smaller the GCV**.
@@ -120,6 +120,8 @@ smooth_hipboy1_11$gcv
 smooth_hipboy1_15$gcv
 smooth_hipboy1_19$gcv
 ```
+
+From 7 in advance there is small improvement and overfitting.
 
 For the whole data set, we are going to compute the value of the GCV criterion for a large selection of values of $k$, all odd from $3$ to $101$, and we will see which is the behavior of the GCV criterion for the candidate values of $k$.
 
@@ -143,11 +145,93 @@ The plot shows the values of the GCV criterion decreases when $k$ increases, as 
 
 It can also be seen that it increases for very large $k$ since we only have 20 points, so k=20 interpolates and k close to 20 nearly interpolates, which is not optimal when predicting new sample, which CV does.
 
+Let's do it now with penalized smoothing
 
+
+Next, we attempt to smooth the hip angle of the first boy with **penalized smoothing**. For that, we proceed to select an appropriate value of the penalization parameter $\lambda$. We first consider a large amount of very distant possible values of $\lambda$ and compute the value of the GCV criterion. For simplicity, we focus on the Fourier basis with $K=7$ basis functions. After computing the GCV criterion, it looks that a value of $\lambda$ between $1$ and $100$ should be appropriate.
+
+```{r }
+lambdas <- 10^(seq(-5,5,by=1))
+lambdas
+l_lambdas <- length(lambdas)
+l_lambdas
+gcv_lambdas <- vector(mode="numeric",length=l_lambdas)
+for (i in 1:l_lambdas){
+  Fourier_pen_7 <- fdPar(fdobj=fourier_basis_7,Lfdobj=2,lambda=lambdas[i])
+  smooth_hipboy1_7_pen <- smooth.basis(argvals=1:20,y=hipboy1,
+                                            fdParobj=Fourier_pen_7)
+  gcv_lambdas[i] <- smooth_hipboy1_7_pen$gcv 
+}
+plot(1:l_lambdas,gcv_lambdas,pch=19,col=color_1,main="GCV criterion for lambdas",
+     xlab="Lambda components",ylab="Value of GCV")
+lambdas[which.min(gcv_lambdas)]
+```
+
+The optimal is of order 0.1. Then, we repeat the same scheme but taking several possible values of $\lambda$ between $0.01$ and $0.2$. In this case, the optimal value of $\lambda$ is $0.8$.
+
+```{r }
+lambdas <- seq(0.01,0.2,by=0.01)
+head(lambdas)
+l_lambdas <- length(lambdas)
+l_lambdas
+gcv_lambdas <- vector(mode="numeric",length=l_lambdas)
+for (i in 1:l_lambdas){
+  Fourier_pen_7 <- fdPar(fdobj=fourier_basis_7,Lfdobj=2,lambda=lambdas[i])
+  smooth_dailyAv_temp_7_pen <-smooth.basis(argvals=1:20,y=hipboy1,
+                                            fdParobj=Fourier_pen_7)
+  gcv_lambdas[i] <- smooth_dailyAv_temp_7_pen$gcv 
+}
+plot(lambdas,gcv_lambdas,pch=19,col=color_1,main="GCV criterion for lambdas",
+     xlab="Lambda values",ylab="Value of GCV")
+lambdas[which.min(gcv_lambdas)]
+```
+
+Once $\lambda$ has been selected, we can see the final fitting. You can check that the result is slightly smoother than the original fitting with $7$ Fourier basis functions. If we want more smoothing, we can increase the value of $\lambda$ or reduce the number of Fourier basis. In any case, a visual inspection of the resulting curves is recommended to check if they reflect the structure of the data well.
+
+```{r }
+Fourier_pen_7 <- fdPar(fdobj=fourier_basis_7,Lfdobj=2,lambda=lambdas[which.min(gcv_lambdas)])
+smooth_dailyAv_temp_7_pen <- smooth.basis(argvals=1:20,y=hipboy1,
+                                           fdParobj=Fourier_pen_7)
+plot(1:20,hipboy1,pch=20,col=color_1,
+     main="Smoothing with roughness penalty with 7 Fourier basis functions",
+     xlab="Index",ylab="Hip Angle")
+lines(smooth_dailyAv_temp_7_pen,lty=1,lwd=3,col=color_2)
+```
 
 
 
 - (d) Smooth all the hip angles with OLS and penalized smoothing with a basis function system of your (appropriate) choice. Describe all the steps taken in your analysis with explanations and appropriate graphs.
+
+
+Note that we have just smoothed a single weather station. The way to proceed would be to repeat this scheme for all the weather stations where the value of the GCV for each value of $\lambda$ is the sum of the GCV for the 39 children. As before, the idea is to look for an appropriate value of $\lambda$ in the interval $[0.01,0.2]$. The optimal value in this case is to take $\lambda=0.16$.
+
+```{r }
+lambdas <- seq(0.01,0.2,by=0.01)
+head(lambdas)
+l_lambdas <- length(lambdas)
+l_lambdas
+gcv_lambdas <- vector(mode="numeric",length=l_lambdas)
+for (i in 1:l_lambdas){
+  Fourier_pen_7 <- fdPar(fdobj=fourier_basis_7,Lfdobj=2,lambda=lambdas[i])
+  smooth_dailyAv_temp_7_pen <-smooth.basis(argvals=1:20,y=gait[,,1],
+                                            fdParobj=Fourier_pen_7)
+  gcv_lambdas[i] <- sum(smooth_dailyAv_temp_7_pen$gcv)
+}
+plot(lambdas,gcv_lambdas,pch=19,col=color_1,main="GCV criterion for lambdas",
+     xlab="Lambda values",ylab="Value of GCV")
+lambdas[which.min(gcv_lambdas)]
+```
+
+Then, we proceed to make the fit with such value of $\lambda$. See the corresponding plot of the functions for the $35$ weather stations.
+
+```{r }
+Fourier_pen_7 <- fdPar(fdobj=fourier_basis_7,Lfdobj=2,lambda=lambdas[which.min(gcv_lambdas)])
+smooth_dailyAv_temp_7_pen <- smooth.basis(argvals=1:20,y=gait[,,1],
+                                           fdParobj=Fourier_pen_7)
+plot(smooth_dailyAv_temp_7_pen,xlab="Day",ylab="Temperature")
+title("Smoothed temperatures with roughness penalty with 7 Fourier basis")
+lines(smooth_dailyAv_temp_7_pen,lty=1,lwd=2,col=color_1)
+```
 
 
 
