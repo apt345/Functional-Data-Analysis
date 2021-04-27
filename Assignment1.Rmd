@@ -1,12 +1,12 @@
 ---
-title: "Assignment1"
+title: "Assignment 1 Functional Data Analysis"
 author: "Arturo Prieto Tirado"
 date: "20/4/2021"
 output: html_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, message = FALSE)
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
 ```
 
 
@@ -35,7 +35,7 @@ x=as.numeric(row.names(gait))
 matplot(x=x, y=gait[,1:3,1], type="p", pch=20, xlab = "Movement Cycle", ylab = "Hip Angle (degrees)")
 ```
 
-It can be seen that the general shape is similar for all of them, which suggest that there is a function governing hip angle. There are however individual differences since their amplitudes differ. Boy 1 has the smallest movility range while Boy 3 has the greatest. Also, there are negative angles.
+It can be seen that the general shape is similar for all of them, high angles at the beggining and end of the cycle and low angles in the middle, which suggest that there is a function governing hip angle. There are however individual differences since their amplitudes differ. Boy 1 has the smallest mobility range while Boy 3 has the greatest. The minimum value is -3 degrees and the maximum, 53 degrees.
 
 
 
@@ -48,16 +48,16 @@ matplot(x=x, y=gait[,1:39,1], type="l", lty=1, xlab = "Movement Cycle", ylab = "
 
 ```
 
-It can be seen that most of the children follow more or less the same values but some of them follow curves far away from the group, with the possibility of being outliers. Also, the curves are obviously not smooth since we are just joining lines so the next step is to smooth them.
+It can be seen that most of the children follow the same shape as the analysis done only for the three first boys, high angles at the beggining and end of the cycle and low angles in the middle. However, some of them follow curves far away from the group, with the possibility of being outliers. Also, the curves are obviously not smooth since we are just joining lines so the next step is to smooth them.
 
 - (c) Smooth the hip angles corresponding to the first boy with OLS and penalized smoothing with a basis function system of your (appropriate) choice. Describe all the steps taken in your analysis with explanations and appropriate graphs.
 
-Now we want to smooth the results just for the first boy. The way one smooths is by doing a basis expansion. I will use the Fourier basis since the data represent a cycle so they are expected to be periodic. Knowing the basis functions one can just fit them appropriately to the data. However, it is first necessary to know the number K of basis functions we want to use, because there are an infinite number of them. In order to do this, Cross Validation can be used to find K minimizing the sum of squares. In order to reduce computational costs, Generalized Cross Validation (GCV) is used. The problem with this method is that it tends to select a very high number of basis functions, thus basically interpolating the data (overfitting) or creating very rough (not smoothed) curves. The approach that solves this is penalized smoothing. This method penalizes overfitting (associated with high values of $K$) by looking at the total curvature of the curve, since the more complicated the curve, usually the more curvature, by a factor of lambda, that one needs to optimize as well.
+Now we want to smooth the results just for the first boy. The way one smooths is by doing a basis expansion. I will use the Fourier basis since the data represent a cycle so they are expected to be periodic. Knowing the basis functions, one can just fit them appropriately to the data, that is, find the coefficients that build the best linear combination of the basis. However, it is first necessary to know the number $K$ of basis functions we want to use, because there are an infinite number of them. In order to do this, Cross Validation can be used to find $K$ minimizing the sum of squares. In order to reduce computational costs, Generalized Cross Validation (GCV) is used. The problem with this method is that it tends to select a very high number of basis functions, thus basically interpolating the data and creating very rough (not smoothed) curves. The approach that solves this is penalized smoothing. This method penalizes overfitting (associated with high values of $K$) by looking at the total curvature of the curve since the more complicated the curve, usually the more curvature, adding a penalization term with a factor of lambda, that one needs to optimize as well.
 
 
 The goal here is to smooth the hip angle in the $39$ boys with **Fourier basis**. Initially, we focus first in smoothing the first boy in the data set. To see the effect of the value of $K$ in the curve estimate, we consider four different number of basis functions, $K=3$, $5$, $7$ and $9$. Remember that the number of Fourier basis functions should be an odd number and it has to be smaller than the number of points per boy, so 20. The closer to 20, the more overfitting.
 
-For that, the first step is to **create the four Fourier basis systems** using the `fda` package.  This is done using the function `create.fourier.basis`. The observation interval is $[1,20]$.
+For that, the first step is to **create the four Fourier basis systems** using the `fda` package.  This is done using the function `create.fourier.basis`. The observation interval is $[0,1]$, with the extremes being the two points corresponding to a full period (cycle) that determine the periodicity of the function.
 
 ```{r}
 #periodicity f(0)=f(1)
@@ -68,17 +68,17 @@ fourier_basis_7 <- create.fourier.basis(rangeval=interval,nbasis=7)
 fourier_basis_9 <- create.fourier.basis(rangeval=interval,nbasis=9)
 ```
 
-The second step is to **smooth the hip angle for the first boy with OLS** and the four Fourier basis systems. This is done using the function `smooth.basis`. Here, the observation points are $1$ to $20$, corresponding to each movement position.
+The second step is to **smooth the hip angle for the first boy with OLS** and the four Fourier basis systems. This is done using the function `smooth.basis`. Here, the observation points are $0.025$ to $0.975$, corresponding to each movement position.
 
 ```{r }
 
-smooth_hipboy1_7 <- smooth.basis(argvals=x,y=hipboy1,
+smooth_hipboy1_3 <- smooth.basis(argvals=x,y=hipboy1,
                                        fdParobj=fourier_basis_3)
-smooth_hipboy1_11 <- smooth.basis(argvals=x,y=hipboy1,
+smooth_hipboy1_5 <- smooth.basis(argvals=x,y=hipboy1,
                                        fdParobj=fourier_basis_5)
-smooth_hipboy1_15 <- smooth.basis(argvals=x,y=hipboy1,
+smooth_hipboy1_7 <- smooth.basis(argvals=x,y=hipboy1,
                                        fdParobj=fourier_basis_7)
-smooth_hipboy1_19 <- smooth.basis(argvals=x,y=hipboy1,
+smooth_hipboy1_9 <- smooth.basis(argvals=x,y=hipboy1,
                                        fdParobj=fourier_basis_9)
 ```
 
@@ -87,38 +87,38 @@ Next, we see the four fittings. For that, we plot the observed points and the co
 ```{r }
 plot(x,hipboy1,pch=20,col=color_1,
      main="Smoothing with OLS with 3 Fourier basis functions",xlab="Cycle",ylab="Hip Angle (degrees)")
-lines(smooth_hipboy1_7,lty=1,lwd=3,col=color_2)
+lines(smooth_hipboy1_3,lty=1,lwd=3,col=color_2)
 plot(x,hipboy1,pch=20,col=color_1,
      main="Smoothing with OLS with 5 Fourier basis functions",xlab="Cycle",ylab="Hip Angle (degrees)")
-lines(smooth_hipboy1_11,lty=1,lwd=3,col=color_2)
+lines(smooth_hipboy1_5,lty=1,lwd=3,col=color_2)
 plot(x,hipboy1,pch=20,col=color_1,
      main="Smoothing with OLS with 7 Fourier basis functions",xlab="Cycle",ylab="Hip Angle (degrees)")
-lines(smooth_hipboy1_15,lty=1,lwd=3,col=color_2)
+lines(smooth_hipboy1_7,lty=1,lwd=3,col=color_2)
 plot(x,hipboy1,pch=20,col=color_1,
      main="Smoothing with OLS with 9 Fourier basis functions",xlab="Cycle",ylab="Hip Angle (degrees)")
-lines(smooth_hipboy1_19,lty=1,lwd=3,col=color_2)
+lines(smooth_hipboy1_9,lty=1,lwd=3,col=color_2)
 ```
 
-Additionally, we plot the four sets of residuals after the smoothings. Residuals are helpful to see whether there are fitting problems. Here, apparently there are no severe problems, but taking into account the seasonal structure of the data, probably the residuals are autocorrelated. Of course, more tools can be used to check the model fitting, but it is better to move to smoothing with roughness penalties where the value of $K$ will not be so relevant.
+Additionally, we plot the four sets of residuals after the smoothings. Residuals are helpful to see whether there are fitting problems. Of course, more tools can be used to check the model fitting, but it is better to move to smoothing with roughness penalties where the value of $K$ will not be so relevant.
 
 ```{r }
-plot(x,residuals(smooth_hipboy1_7),pch=20,col=color_1,
+plot(x,residuals(smooth_hipboy1_3),pch=20,col=color_1,
      main="Residuals with 3 basis functions",xlab="Cycle",ylab="Temperature")
-plot(x,residuals(smooth_hipboy1_11),pch=20,col=color_1,
+plot(x,residuals(smooth_hipboy1_5),pch=20,col=color_1,
      main="Residuals with 5 basis functions",xlab="Cycle",ylab="Temperature")
-plot(x,residuals(smooth_hipboy1_15),pch=20,col=color_1,
+plot(x,residuals(smooth_hipboy1_7),pch=20,col=color_1,
      main="Residuals with 7 basis functions",xlab="Cycle",ylab="Temperature")
-plot(x,residuals(smooth_hipboy1_19),pch=20,col=color_1,
+plot(x,residuals(smooth_hipboy1_9),pch=20,col=color_1,
      main="Residuals with 9 basis functions",xlab="Cycle",ylab="Temperature")
 ```
 
-Now, we focus on the selection of $K$. For the previous fittings, it is easy to check that forthe first boy **the larger K, the smaller the GCV**.
+Now, we focus on the selection of $K$. For the previous fittings, it is easy to check that for the first boy **the larger K, the smaller the GCV**.
 
-```{r gcvfourier}
+```{r gcvfourier, eval=FALSE}
+smooth_hipboy1_3$gcv
+smooth_hipboy1_5$gcv
 smooth_hipboy1_7$gcv
-smooth_hipboy1_11$gcv
-smooth_hipboy1_15$gcv
-smooth_hipboy1_19$gcv
+smooth_hipboy1_9$gcv
 ```
 
 From 7 in advance there is small improvement and overfitting.
@@ -150,28 +150,28 @@ Next, we attempt to smooth the hip angle of the first boy with **penalized smoot
 
 ```{r }
 lambdas <- 10^(seq(-5,5,by=1))
-lambdas
+#lambdas
 l_lambdas <- length(lambdas)
-l_lambdas
+#l_lambdas
 gcv_lambdas <- vector(mode="numeric",length=l_lambdas)
 for (i in 1:l_lambdas){
   Fourier_pen_7 <- fdPar(fdobj=fourier_basis_7,Lfdobj=2,lambda=lambdas[i])
-  smooth_hipboy1_7_pen <- smooth.basis(argvals=x,y=hipboy1,
+  smooth_hipboy1_3_pen <- smooth.basis(argvals=x,y=hipboy1,
                                             fdParobj=Fourier_pen_7)
-  gcv_lambdas[i] <- smooth_hipboy1_7_pen$gcv 
+  gcv_lambdas[i] <- smooth_hipboy1_3_pen$gcv 
 }
 plot(1:l_lambdas,gcv_lambdas,pch=19,col=color_1,main="GCV criterion for lambdas",
      xlab="Lambda components",ylab="Value of GCV")
-lambdas[which.min(gcv_lambdas)]
+#lambdas[which.min(gcv_lambdas)]
 ```
 
-The optimal is of order 0.1. Then, we repeat the same scheme but taking several possible values of $\lambda$ between $0.01$ and $0.2$. In this case, the optimal value of $\lambda$ is $0.8$.
+The optimal is of order $10^{-5}$. Then, we repeat the same scheme but taking several possible values of $\lambda$ between $10^{-6}$ and $10^{-5}$. In this case, the optimal value of $\lambda$ is $7\cdot10^{-6}$.
 
 ```{r }
 lambdas <- seq(1e-6,1e-5,by=1e-6)
-head(lambdas)
+#head(lambdas)
 l_lambdas <- length(lambdas)
-l_lambdas
+#l_lambdas
 gcv_lambdas <- vector(mode="numeric",length=l_lambdas)
 for (i in 1:l_lambdas){
   Fourier_pen_7 <- fdPar(fdobj=fourier_basis_7,Lfdobj=2,lambda=lambdas[i])
@@ -181,10 +181,10 @@ for (i in 1:l_lambdas){
 }
 plot(lambdas,gcv_lambdas,pch=19,col=color_1,main="GCV criterion for lambdas",
      xlab="Lambda values",ylab="Value of GCV")
-lambdas[which.min(gcv_lambdas)]
+#lambdas[which.min(gcv_lambdas)]
 ```
 
-Once $\lambda$ has been selected, we can see the final fitting. You can check that the result is slightly smoother than the original fitting with $7$ Fourier basis functions. If we want more smoothing, we can increase the value of $\lambda$ or reduce the number of Fourier basis. In any case, a visual inspection of the resulting curves is recommended to check if they reflect the structure of the data well.
+Once $\lambda$ has been selected, we can see the final fitting. The result is slightly smoother than the original fitting with $7$ Fourier basis functions. If we want more smoothing, we can increase the value of $\lambda$ or reduce the number of Fourier basis.
 
 ```{r }
 Fourier_pen_7 <- fdPar(fdobj=fourier_basis_7,Lfdobj=2,lambda=lambdas[which.min(gcv_lambdas)])
@@ -198,16 +198,17 @@ lines(smooth_dailyAv_temp_7_pen,lty=1,lwd=3,col=color_2)
 
 
 
+
 - (d) Smooth all the hip angles with OLS and penalized smoothing with a basis function system of your (appropriate) choice. Describe all the steps taken in your analysis with explanations and appropriate graphs.
 
 
-Note that we have just smoothed a single boy. The way to proceed would be to repeat this scheme for all the boys where the value of the GCV for each value of $\lambda$ is the sum of the GCV for the 39 children. As before, the idea is to look for an appropriate value of $\lambda$ in the interval $[0.01,0.2]$. The optimal value in this case is to take $\lambda=0.16$.
+Note that we have just smoothed a single boy. The way to proceed would be to repeat this scheme for all the boys where the value of the GCV for each value of $\lambda$ is the sum of the GCV for the 39 children. As before, the idea is to look for an appropriate value of $\lambda$ in the interval $[10^{-6},2\cdot10^{-5}]$. The optimal value in this case is to take $\lambda=1.4\cdot10^{-5}$.
 
 ```{r }
 lambdas <- seq(1e-6,2e-5,by=1e-6)
-head(lambdas)
+#head(lambdas)
 l_lambdas <- length(lambdas)
-l_lambdas
+#l_lambdas
 gcv_lambdas <- vector(mode="numeric",length=l_lambdas)
 for (i in 1:l_lambdas){
   Fourier_pen_7 <- fdPar(fdobj=fourier_basis_7,Lfdobj=2,lambda=lambdas[i])
@@ -218,10 +219,10 @@ for (i in 1:l_lambdas){
 }
 plot(lambdas,gcv_lambdas,pch=19,col=color_1,main="GCV criterion for lambdas",
      xlab="Lambda values",ylab="Value of GCV")
-lambdas[which.min(gcv_lambdas)]
+#lambdas[which.min(gcv_lambdas)]
 ```
 
-Then, we proceed to make the fit with such value of $\lambda$. See the corresponding plot of the functions for the $39$ children.
+Then, we proceed to make the fit with such value of $\lambda=1.4\cdot10^{-5}$ for the $39$ children.
 
 ```{r }
 Fourier_pen_7 <- fdPar(fdobj=fourier_basis_7,Lfdobj=2,lambda=lambdas[which.min(gcv_lambdas)])
@@ -236,9 +237,9 @@ lines(smooth_dailyAv_temp_7_pen,lty=1,lwd=2,col=color_1)
 
 
 
--(e) Obtain conclusions on the data set based on the analyses performed.
+- (e) Obtain conclusions on the data set based on the analyses performed.
 
-
+The final curves are very smooth, not rough. Outliers..
 
 
 
@@ -308,6 +309,7 @@ Use the fact that the inner product has the linearity property $\langle x+y,w \r
 $$
  \langle f, e_k \rangle=\sum_l^\infty\langle c_le_l, e_k\rangle=c_k
 $$
+
 - (d) Prove the Parceval's inequality.
 
 We want to prove that 
