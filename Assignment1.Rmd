@@ -1,7 +1,7 @@
 ---
 title: "Assignment 1 Functional Data Analysis"
 author: "Arturo Prieto Tirado"
-date: "20/4/2021"
+date: "27/4/2021"
 output: html_document
 ---
 
@@ -18,12 +18,14 @@ color_2 <- "darkorange2"
 color_3 <- "darkorchid2"
 ```
 
-2.
+# Exercise 2
 
 The object gait is an array of size 20x39x2 containing the hip and knee angle in degrees through a 20 point movement cycle for 39 boys. Carry out the following tasks and write a report summarizing your work:
 
 
 - (a) Make a plot of the hip angles for the first three boys using points and explain the main characteristics of the three hip angles.
+
+The following plot shows the hip angle for the first three boys in black, red and green respectively for the first, second and third boy.
 
 ```{r}
 hipboy1=gait[,1,1]
@@ -99,17 +101,17 @@ plot(x,hipboy1,pch=20,col=color_1,
 lines(smooth_hipboy1_9,lty=1,lwd=3,col=color_2)
 ```
 
-Additionally, we plot the four sets of residuals after the smoothings. Residuals are helpful to see whether there are fitting problems. Of course, more tools can be used to check the model fitting, but it is better to move to smoothing with roughness penalties where the value of $K$ will not be so relevant.
+Additionally, we plot the four sets of residuals after the smoothings. Looking at the residuals can be helpful to see whether there are fitting problems. It is clear that with only 3 basis functions we are missing something in the fit, since the residuals have a clear pattern. This pattern diminishes once we add some more basis.
 
 ```{r }
 plot(x,residuals(smooth_hipboy1_3),pch=20,col=color_1,
-     main="Residuals with 3 basis functions",xlab="Cycle",ylab="Temperature")
+     main="Residuals with 3 basis functions",xlab="Cycle",ylab="Hip Angle (degrees)")
 plot(x,residuals(smooth_hipboy1_5),pch=20,col=color_1,
-     main="Residuals with 5 basis functions",xlab="Cycle",ylab="Temperature")
+     main="Residuals with 5 basis functions",xlab="Cycle",ylab="Hip Angle (degrees)")
 plot(x,residuals(smooth_hipboy1_7),pch=20,col=color_1,
-     main="Residuals with 7 basis functions",xlab="Cycle",ylab="Temperature")
+     main="Residuals with 7 basis functions",xlab="Cycle",ylab="Hip Angle (degrees)")
 plot(x,residuals(smooth_hipboy1_9),pch=20,col=color_1,
-     main="Residuals with 9 basis functions",xlab="Cycle",ylab="Temperature")
+     main="Residuals with 9 basis functions",xlab="Cycle",ylab="Hip Angle (degrees)")
 ```
 
 Now, we focus on the selection of $K$. For the previous fittings, it is easy to check that for the first boy **the larger K, the smaller the GCV**.
@@ -121,9 +123,7 @@ smooth_hipboy1_7$gcv
 smooth_hipboy1_9$gcv
 ```
 
-From 7 in advance there is small improvement and overfitting.
-
-For the whole data set, we are going to compute the value of the GCV criterion for a large selection of values of $k$, all odd from $3$ to $20$, and we will see which is the behavior of the GCV criterion for the candidate values of $k$.
+Now, let's compute the value of the GCV criterion for a large selection of values of $k$, all odd from $3$ to $20$, and we will see which is the behavior of the GCV criterion for the candidate values of $k$.
 
 ```{r }
 k_min <- 3
@@ -141,12 +141,12 @@ for (k in k_can){
 plot(k_can,gcv_k,pch=19,col=color_1,main="GCV criterion for OLS",xlab="k",ylab="Value of GCV")  
 ```
 
-The plot shows the values of the GCV criterion decreases when $k$ increases, as expected. Thus, the GCV method will select a number of Fourier basis functions very large that leads to rough temperature curves. This is the main motivation of using smoothing with roughness penalties, that will be seen in the next section.
+The plot shows the values of the GCV criterion decreases when $k$ increases, as expected. Thus, the GCV method will select a number of Fourier basis functions very large that leads to rough curves, from 7 basis functions in advance there is small improvement and overfitting. This is the main motivation of using smoothing with roughness penalties, which will be studied afterwards.
 
-It can also be seen that it increases for very large $k$ since we only have 20 points, so k=20 interpolates and k close to 20 nearly interpolates, which is not optimal when predicting new sample, which CV takes more or less into account. Anyway, choosing $k$ can lead to under or oversmoothing. A way to try to control things is with penalized smoothing
+It can also be seen that it increases for very large $k$ since we only have 20 points, so $k=20$ or close to 20 is heavily overfitted, which is not optimal when generalizing to a new sample, which CV takes more or less into account.
 
 
-Next, we attempt to smooth the hip angle of the first boy with **penalized smoothing**. For that, we proceed to select an appropriate value of the penalization parameter $\lambda$. We first consider a large amount of very distant possible values of $\lambda$ and compute the value of the GCV criterion. For simplicity, we focus on the Fourier basis with $K=7$ basis functions. 
+Since GCV tends to select high values of $k$, in order to avoid overfitting, one can use **penalized smoothing**. Now, we attempt to smooth the hip angle of the first boy with this procedure . For that, we proceed to select an appropriate value of the penalization parameter $\lambda$. We first consider a large amount of very distant possible values of $\lambda$ and compute the value of the GCV criterion. For simplicity, we focus on the Fourier basis with $K=7$ basis functions. 
 
 ```{r }
 lambdas <- 10^(seq(-5,5,by=1))
@@ -192,7 +192,7 @@ smooth_dailyAv_temp_7_pen <- smooth.basis(argvals=x,y=hipboy1,
                                            fdParobj=Fourier_pen_7)
 plot(x,hipboy1,pch=20,col=color_1,
      main="Smoothing with roughness penalty with 7 Fourier basis functions",
-     xlab="Cycle",ylab="Hip Angle")
+     xlab="Cycle",ylab="Hip Angle (degrees)")
 lines(smooth_dailyAv_temp_7_pen,lty=1,lwd=3,col=color_2)
 ```
 
@@ -229,7 +229,7 @@ Fourier_pen_7 <- fdPar(fdobj=fourier_basis_7,Lfdobj=2,lambda=lambdas[which.min(g
 smooth_dailyAv_temp_7_pen <- smooth.basis(argvals=x,y=gait[,,1],
                                            fdParobj=Fourier_pen_7)
 plot(smooth_dailyAv_temp_7_pen,xlab="Cycle",ylab="Hip Angle (degrees)")
-title("Smoothed temperatures with roughness penalty with 7 Fourier basis")
+title("Smoothed Hip Angle with roughness penalty with 7 Fourier basis")
 lines(smooth_dailyAv_temp_7_pen,lty=1,lwd=2,col=color_1)
 ```
 
@@ -239,7 +239,7 @@ lines(smooth_dailyAv_temp_7_pen,lty=1,lwd=2,col=color_1)
 
 - (e) Obtain conclusions on the data set based on the analyses performed.
 
-The final curves are very smooth, not rough. Outliers..
+In conclusion, the methodology used has shown that the hip angle throughout the movement cycle can be understood as a random function whom each of its realizations represents the function governing each boy. This functions have been obtained by fitting periodic basis functions, Fourier functions, to each set of points of each boy, respecting the periodicity of the original data. This fitting has been improved by using penalized smoothing to avoid overfitting. In this way, the final curves obtained are very smooth and they all follow the same trend, high values at the beginning and end of the cycle and low values in the middle of it. With respect to the distribution of the functions, the majority of them are very close to each other but there are also some of them that are clearly away from the group, being potential outliers.
 
 
 
@@ -248,7 +248,9 @@ The final curves are very smooth, not rough. Outliers..
 
 
 
-4. A few theoretical exercises about square integrable functions:
+# Exercise 4 
+
+A few theoretical exercises about square integrable functions:
 
 - (a) Prove the triangle inequality using the Cauchy-Schwarz inequality.
 
@@ -262,7 +264,7 @@ $$
 
 Now expand the result
 $$
-\|f\|^2+\|g\|^2+2\langle f,g\rangle \leq \|f\|^2+\|g\|^2 +2\|f\|\|g\|
+\|f\|^2+\|g\|^2+2|\langle f,g\rangle| \leq \|f\|^2+\|g\|^2 +2\|f\|\|g\|
 $$
 
 Simplifying, one gets $$|\langle f, g\rangle| \leq\|f\|\|g\|$$ which is precisely the Cauchy-Schwarz inequality. Since the Cauchy-Schwarz inequality is true, it follows that the Triangle inequality is also true.
