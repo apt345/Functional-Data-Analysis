@@ -6,12 +6,14 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = FALSE, warning=FALSE, message=FALSE)
 ```
 
 
 
 ## Exercise 2
+
+The gait data set is included in the fda package. Therefore, you can load the data set after loading the library fda, using data(gait). The object gait is an array of size 20x39x2 containing the hip and knee angle in degrees through a 20 point movement cycle for 39 boys. Carry out the following tasks and write a report summarizing your work:
 ```{r}
 library(fda)
 data(gait)
@@ -26,17 +28,11 @@ x=as.numeric(row.names(gait))
 ```
 
 
-## Preliminar steps
+- (a) Compute all the sample characteristics described in Topic 2 for the hip angles and obtain conclusions from the analysis.
 
-We come back to the **Canadian Weather** data set (Ramsay and Silverman, 2005) to illustrate the computation of sample characteristics of functional random variables. For that, we load the data set into memory from the `fda` package: 
+### Preliminar steps
 
-Remember that `CanadianWeather` is a list containing eight components. One of them, called `dailyAv`, is a three dimensional array of size $365\times35\times3$ summarizing data collected at $35$ different weather stations in Canada including: (1) the average daily temperature for each day of the year; (2) the average daily precipitation for each day of the year rounded to $0.1$ mm; (3) the base $10$ logarithm of precipitation after first replacing $27$ zeros by $0.05$ mm. We will focus on the average daily temperature for each day of the year. 
-
-```{r }
-#head(gait[,,1])
-```
-
-The object `CanadianWeather$dailyAv[,,1]` is a matrix of size $365$x$35$ where rows correspond to days and columns correspond to weather stations. Therefore, every cell in this matrix contains the average daily temperature of a weather station in a single day. We have a look at the average daily temperature for each day of the year for the $35$ weather stations. The temperatures have a clear seasonal pattern linked to the four seasons. The pattern of all the curves is quite similar in the middle of the year (the summer), although in winter there are several differences probably due to the climate zones. Additionally, it appears that there exists at least one outlier (extreme) curve.
+We work again with the same dataset as in the assignment 1. The following plot shows the distribution of the hip angles for the 39 boys just by interpolating the points.
 
 ```{r }
 color_1 <- "deepskyblue2"
@@ -49,9 +45,13 @@ matplot(x=x, y=gait[, , 1],type="l",lty=1,col=color_1,
         xlab="Movement Cycle",ylab="Hip Angle (degrees)",main="Hip angles")
 ```
 
-## Smoothing the temperatures
+It can be seen that most of the children follow the same shape, high angles at the beggining and end of the cycle and low angles in the middle. However, some of them follow curves far away from the group, with the possibility of being outliers. Also, the curves are obviously not smooth since we are just joining lines so the next step is to smooth them.
 
-The first step is to obtain functions from our data, smooth them. This was done in the first assignment. We just repeat the procedure here. For that, the first step is to **create the four Fourier basis systems** using the `fda` package. I will use 7 Fourier basis as in the previous assignment. This is done using the function `create.fourier.basis`. The observation interval is $[0,1]$, with the extremes being the two points corresponding to a full period (cycle) that determine the periodicity of the function.
+### Smoothing the hip angles
+
+The first step is to obtain functions from our data, smooth them. This was done in the first assignment. We just repeat the procedure here.  I will use 7 Fourier basis with a penalization algorithm as in the previous assignment. This is done using the function `create.fourier.basis` and then fitting the basis to the data with the penalization algorithm. The observation interval is $[0,1]$, with the extremes being the two points corresponding to a full period (cycle) that determine the periodicity of the function.
+
+The following plot shows the optimal penalization parameter $\lambda$ (the same as in the first assignment) obtained by Generalized Cross Validation.
 
 ```{r }
 fourier_basis_7 <- create.fourier.basis(rangeval=interval,nbasis=7)
@@ -72,7 +72,7 @@ plot(lambdas,gcv_lambdas,pch=19,col=color_1,main="GCV criterion for lambdas",
 #lambdas[which.min(gcv_lambdas)]
 ```
 
-Then, we proceed to make the fit with such value of $\lambda=1.4\cdot10^{-5}$ for the $39$ children.
+Then, we proceed to make the fit with such value of $\lambda=1.4\cdot10^{-5}$ for the $39$ children to transform our data into functions. The smoothed results are shown in the following plot.
 
 ```{r }
 Fourier_pen_7 <- fdPar(fdobj=fourier_basis_7,Lfdobj=2,lambda=lambdas[which.min(gcv_lambdas)])
@@ -83,9 +83,9 @@ title("Smoothed Hip Angle with roughness penalty with 7 Fourier basis")
 lines(smooth_dailyAv_temp_7_pen,lty=1,lwd=2,col=color_1)
 ```
 
-## Sample functional mean
+### Sample functional mean
 
-Next, we compute the **sample functional mean** of the smoothed data set and add the resulting function into the previous plot. We can see that the functional mean reflects in general quite well the center of the functions. However, in the center, the sample functional mean can be somehow affected by the presence of skewness. We will talk about alternative measures of location and detection of outliers at the end of the chapter. 
+Next, we compute the **sample functional mean** of the smoothed data set and add the resulting function into the previous plot. We can see that the functional mean reflects in general quite well the center of the functions.
 
 ```{r }
 mean_temp <- mean.fd(smooth_dailyAv_temp_7_pen$fd)
@@ -95,9 +95,9 @@ lines(smooth_dailyAv_temp_7_pen,lty=1,lwd=2,col=color_1)
 lines(mean_temp,col=color_2,lwd=3)
 ```
 
-## Sample functional standard deviation
+### Sample functional standard deviation
 
-Now, we compute the **sample functional standard deviation** of the smoothed data set before having a look to the sample functional covariance that includes the sample functional variance. We add the resulting function into the plot with the $35$ functions. We can see that the functional standard deviation shows that there is more variability in winter than in the summer, something that was expected from the plot of the functions. Note also that the plot is quite symmetric reflecting that the variability in spring is quite close to the variability in autumn.
+Now, we compute the **sample functional standard deviation** of the smoothed data set before having a look to the sample functional covariance that includes the sample functional variance. We add the resulting function into the plot with the $39$ functions. We can see that the functional standard deviation shows that the variability is almost constant throughout the cycle, with slightly more variability at the beginning and end of the cycle and less in the middle.
 
 ```{r }
 sd_temp <- sd.fd(smooth_dailyAv_temp_7_pen$fd)
@@ -107,9 +107,9 @@ lines(smooth_dailyAv_temp_7_pen,lty=1,lwd=2,col=color_1)
 lines(sd_temp,col=color_2,lwd=3)
 ```
 
-## Sample functional covariance (including variance)
+### Sample functional covariance (including variance)
 
-The next step is to obtain the **sample covariance function** of the smoothed data set that includes in particular the functional variance. The best way to analyze the sample covariance is through a contour plot and the perspective plot. We obtain these two plots for the smoothed temperature data set. For that, we need to evaluate the sample covariance function obtained at a set of evaluation points. For instance, we can take $50$ points. We can see several aspects: (1) the sample functional variance results in considering $t=s$. Of course, the behavior is similar to the one from the functional standard deviation, i.e., the variability is larger in the winter corresponding to the values in extremes. (2) the sample covariance between nearby points is larger also in winter and late autumn than in the summer.
+The next step is to obtain the **sample covariance function** of the smoothed data set that includes in particular the functional variance. The best way to analyze the sample covariance is through a contour plot and the perspective plot. For that, we need to evaluate the sample covariance function obtained at a set of evaluation points. For instance, we can take $50$ points. We can see several aspects: (1) the sample functional variance results in considering $t=s$. Of course, the behavior is similar to the one from the functional standard deviation, i.e., the variability is almost constant throughout the cycle, with slightly more variability at the beginning and end of the cycle and less in the middle, but since the $t=s$ shows the variance, which is the squared of the standard deviation, it is easier to see the differences between extremes and the middle of the cycle. (2) the sample covariance between nearby points is larger also in extremes of the cycle than in middle points.
 
 ```{r }
 cov_temp <- var.fd(smooth_dailyAv_temp_7_pen$fd)
@@ -122,16 +122,17 @@ contour(points_temp,points_temp,cov_points_temp,lwd=2,
         main="Contour plot of the covariance function of the hip angles of gait data set",col=color_1)
 ```
 
-## Sample functional principal components
+- Carry out a functional principal component analysis of the of the hip angles and
+obtain conclusions from the analysis. 
 
-Here, we are going to obtain the **sample functional principal components** corresponding to the smoothed average daily temperature for each day of the year. In this way, we are going to obtain the primary modes of variation of the data and how many of them are important. For that, we will use the function `pca.fd` of the `fda` package. In particular, `nharm` is the number of FPCs that we want to obtain 
+### Sample functional PCA
+
+Here, we are going to obtain the **sample functional principal components** corresponding to the smoothed ahip angles. In this way, we are going to obtain the primary modes of variation of the data and how many of them are important. For that, we will use the function `pca.fd` of the `fda` package. In particular, `nharm` is the number of FPCs that we want to obtain, in this case, 5 seems more than enough.
 
 ```{r }
 pcs_temp <- pca.fd(smooth_dailyAv_temp_7_pen$fd,nharm=5,harmfdPar=fdPar(smooth_dailyAv_temp_7_pen$fd))
-names(pcs_temp)
+#names(pcs_temp)
 ```
-
-Note that we have selected $34$ FPCs as it is the number of eigenvalues that are different than $0$. In the output: (1) `harmonics` corresponds to the sample eigenfunctions; (2) `values` corresponds to the eigenvalues; (3) `scores` corresponds to the sample FPC scores; (4) `varprop` corresponds to the proportion of variance explained by each eigenfunction; and (5) `meanfd` corresponds to the functional mean. 
 
 We start by having a look at the eigenvalues that will help us to decide how many FPCs are important. For that we define a table that includes the eigenvalues and the proportion of variability explained by the FPCs:
 
@@ -145,7 +146,7 @@ plot(1:5,table_fpcs_temp[,2],pch=19,col=color_1,type="b",main="Proportion of var
      xlab="Number of eigenvalue",ylab="Value")
 ```
 
-From the table, we can see that only $2$ FPCs are able to explain the $97.09%$ of the total variability. Therefore, we recompute the FPCs asking for only two for plotting them.
+From the table, we can see that only $2$ FPCs are able to explain the $85%$ of the total variability. Therefore, we recompute the FPCs asking for only two for plotting them.
 
 ```{r }
 npc=2
@@ -159,9 +160,9 @@ title("Second FPC")
 lines(pcs_temp$harmonics[2],lty=1,lwd=2,col=color_1)
 ```
 
-We can see that the first FPC clearly show something that we expected. The variability is larger in autumn and winter than in the summer. On the other hand, the second FPC shows a contrast between the winter and the summer temperatures. Therefore, there two main sources of variation in the data set. On the one hand, the different variability among seasons and the differences between winter and summer.
+We can see that the first FPC clearly show something expected. The variability is larger in beginning and end of the cycle and less on the middle points. On the other hand, the second FPC shows a contrast between the first half and the second half of the cycle. Therefore, there two main sources of variation in the data set. On the one hand, the different variability among extremes and middle values and the differences between first half and second half.
 
-Next, we can plot the functional principal component scores (FPCs). We can see that the scores show the presence of groups and probably outliers.
+Next, we can plot the functional principal component scores (FPCs). We can see that the scores show the presence of groups and probably outliers as Boy 5 or Boy 38.
 
 ```{r }
 plot(pcs_temp$scores,pch=19,col=color_1,main="FPCs scores",xlab="First score",ylab="Second score")
@@ -169,11 +170,13 @@ text(pcs_temp$scores,labels=paste("Boy",1:39),pos=1,col=color_5,cex=0.7)
 #number the different boys from 1 to 39
 ```
 
-# Functional depths
+- Compute the functional data depths for the hip angles and obtain conclusions from the analysis. How big does the influence of the most extreme curves seem to be?
 
-Here, we are going to compute **functional depths** for the smoothed average daily temperature for each day of the year in the Canadian weather data set. For that, we will make use of the `fda.usc` package. It is important to note that the way in which this package creates and smooth functional data sets is different than the way with the `fda` package. Therefore, it is necessary to be careful in the following steps.
+### Functional depths
 
-Then, we start by loading the `fda.usc` package and by creating a functional object using the `fdata` function of this package. For that we only need the observations points and the matrix containing the data set. For that, note that we use the transpose of the data matrix because `fda.usc` uses rows for functions and columns for observations. Here, we take advantage of the smoothing carried out previously, so that we create an object called `Canadian_temp_smooth` that is equal to the smoothed temperatures evaluated at the observation points:
+Here, we are going to compute **functional depths** for the smoothed data. For that, we will make use of the `fda.usc` package. It is important to note that the way in which this package creates and smooth functional data sets is different than the way with the `fda` package. Therefore, it is necessary to be careful in the following steps.
+
+Then, we start by loading the `fda.usc` package and by creating a functional object using the `fdata` function of this package.
 
 ```{r }
 library(fda.usc)
@@ -185,7 +188,7 @@ fdataobj_temp <- fdata(t(Canadian_temp_smooth),tt)
 The idea with depths is to make an ordering of the most central function (the deepest one) and the least central function (the one with the lowest depth).
 
 
-Next, we compute the value of the **Fraiman and Muniz depth** with the function `depth.FM`. Note that we add the option `draw=TRUE` to get a plot of the functions where the most central function appears in red, the most central function if a certain proportion of functions is trimmed appears in blue, and the others appear in a gray scale, where dark gray means very central, and soft gray means very extreme. Additionally, we plot the value of the depths for the $35$ weather stations. We can see that **Thunder Bay is the most central temperature, while Resolute is the most extreme**. This is not a surprise because we checked that Resolute is the coldest weather station in the data set.
+Next, we compute the value of the **Fraiman and Muniz depth** with the function `depth.FM`. Note that we add the option `draw=TRUE` to get a plot of the functions where the most central function appears in red, the most central function if a certain proportion of functions is trimmed appears in blue, and the others appear in a gray scale, where dark gray means very central, and soft gray means very extreme. Additionally, we plot the value of the depths for the $39$ boys. We can see that **Boy 22 is the most central, while Boy 23 is the most extreme**.
 
 ```{r }
 depth_FM_Canadian <- depth.FM(fdataobj_temp,trim=.1,draw=TRUE)
@@ -195,7 +198,7 @@ plot(1:39,depth_FM_Canadian$dep,col=color_1,pch=19,
 text(1:39,depth_FM_Canadian$dep,labels=paste("Boy",1:39),pos=1,col=color_2,cex=0.7)
 ```
 
-Next, we compute the value of the **modal depth** with the function `depth.mode`. In this case, we can see that **Sherbrooke is the most central temperature, while Resolute is again the most extreme**. Note that the most central function is different than in the previous one, but you can check that there are several functions that are very close to each other. 
+Next, we compute the value of the **modal depth** with the function `depth.mode`. In this case, we can see that **Boy 22 is the most central again, while Boy 5 is the most extreme**. Note that the most extreme function is different than in the previous one while the most central is the same.
 
 ```{r }
 depth_mode_Canadian <- depth.mode(fdataobj_temp,trim=.1,draw=TRUE)
@@ -205,7 +208,7 @@ plot(1:39,depth_mode_Canadian$dep,col=color_1,pch=19,
 text(1:39,depth_mode_Canadian$dep,labels=paste("Boy",1:39),pos=1,col=color_2,cex=0.7)
 ```
 
-Now, we compute the value of the **random projection depth** with the function `depth.RP`. In this case, as there is a source of randomness in the computation of the depths, we can have a different ordering of the functions. We use $50$ projections and **Sherbrooke appears to be the most central function**. 
+Now, we compute the value of the **random projection depth** with the function `depth.RP`. In this case, as there is a source of randomness in the computation of the depths, we can have a different ordering of the functions. We use $50$ projections and **Boy 22 appears to be the most central function while Boy 5, the most extreme**. 
 
 ```{r }
 depth_RP_Canadian <- depth.RP(fdataobj_temp,nproj=50,trim=.1,draw=TRUE)
@@ -215,7 +218,7 @@ plot(1:39,depth_RP_Canadian$dep,col=color_1,pch=19,
 text(1:39,depth_RP_Canadian$dep,labels=paste("Boy",1:39),pos=1,col=color_2,cex=0.7)
 ```
 
-The last depth is the **functional spatial depth**. In this case, **Thunder Bay and Sherbrooke attains very close values of the depth, being the first the most central one. Resolute is again the most extreme function**.
+The last depth is the **functional spatial depth**. In this case, again **Boy 22 is the most central one and Boy 5 is the most extreme function**.
 
 ```{r }
 depth_FSD_Canadian <- depth.FSD(fdataobj_temp,trim=.1,draw=TRUE)
@@ -225,7 +228,7 @@ plot(1:39,depth_FSD_Canadian$dep,col=color_1,pch=19,
 text(1:39,depth_FSD_Canadian$dep,labels=paste("Boy",1:39),pos=1,col=color_2,cex=0.7)
 ```
 
-Finally, we compare the value of all the depths in a scatterplot matrix. We can see that the values of the random projection depths and the functional spatial depths are very close. Anyway, note that all the relationships between depths appear to be linear. Probably, the Fraiman and Muniz depth provides with the most different depth values.
+Finally, we compare the value of all the depths in a scatterplot matrix. We can see that the values of the random projection depths and the functional spatial depths are very close. Anyway, note that all the relationships between depths appear to be linear except for Modal Depth and Spatial Depth, where some kind of curvature can be seen. Probably, the Fraiman and Muniz depth provides with the most different depth values.
 
 ```{r }
 all_depths <- cbind(depth_FM_Canadian$dep,depth_mode_Canadian$dep,
@@ -234,18 +237,20 @@ colnames(all_depths) <- c("FM depth","Modal depth","RP depth","Spatial depth")
 pairs(all_depths,col=color_1,pch=19)
 ```
 
+- Apply the procedures for functional outlier detection for the hip angles and try to determine why the curves obtained as outliers, if any, appear to be outliers.
+
 # Outlier detection with functional depths
 
-Here, we are going to check whether there are **functional outliers** in the smoothed average daily temperature for each day of the year in the Canadian weather data set. For that, we will make use again of the `fda.usc` package that has implemented the **procedure for detecting outliers with functional depth with both the trimming and the weighting bootstrap methods to compute the curoff $C$**. The functions are `outliers.depth.trim` and `outliers.depth.pond`, respectively. We are going to choose the default options, i.e., the number of bootstrap samples is $200$, the smoothing parameter $\gamma$ is $0.05$ and the functional depth used if the modal one. Also, for trimming, it is used $\alpha=0.01$.
+Here, we are going to check whether there are **functional outliers** in the smoothed hip angles for each movement position in the Gait data set. For that, we will make use again of the `fda.usc` package that has implemented the **procedure for detecting outliers with functional depth with both the trimming and the weighting bootstrap methods to compute the cutoff $C$**. The functions are `outliers.depth.trim` and `outliers.depth.pond`, respectively. We are going to choose the default options, i.e., the number of bootstrap samples is $200$, the smoothing parameter $\gamma$ is $0.05$ and the functional depth used if the modal one. Also, for trimming, it is used $\alpha=0.01$.
 
 ```{r }
 out_trimming <- outliers.depth.trim(fdataobj_temp)
-out_trimming
+#out_trimming
 out_weighting <- outliers.depth.pond(fdataobj_temp)
-out_weighting
+#out_weighting
 ```
 
-As it can be seen, the two procedures label the temperatures in Resolute as a functional outlier. This is not a surprise in view of the previous analysis. The estimates of the cutoff $C$ with trimming and weighting are $0.6485$ and $0.4929$, respectively, while the value of the depth at Resolute is $0.4148$. Finally, we make a plot of the data set and the detected functional outlier:
+As it can be seen, the two procedures label the hip angles of Boy 5 as a functional outlier. This is not a surprise in view of the previous analysis. The estimates of the cutoff $C$ with trimming and weighting are $1.0392$ and $0.8802$, respectively, while the value of the depth at Boy 5 is $0.8186$. Finally, we make a plot of the data set and the detected functional outlier:
 
 ```{r }
 plot(smooth_dailyAv_temp_7_pen,lty=1,lwd=2,col=color_1,
