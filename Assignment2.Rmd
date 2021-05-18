@@ -5,6 +5,21 @@ date: "10/5/2021"
 output: html_document
 ---
 
+
+<style>
+body {
+text-align: justify;
+font-size: 10pt}
+img{
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  width: 60%;
+}
+</style>
+
+
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE, warning=FALSE, message=FALSE)
 ```
@@ -119,7 +134,7 @@ persp(points_temp,points_temp,cov_points_temp,phi=30,theta=30,expand=.5,col=colo
       ltheta=120,shade=0.5,ticktype="detailed",xlab="t",ylab="s",zlab="",
       r=40,d=.1,border=color_3,main="Covariance function of the hip angles of gait data set")
 contour(points_temp,points_temp,cov_points_temp,lwd=2,
-        main="Contour plot of the covariance function of the hip angles of gait data set",col=color_1)
+        main="Contour plot of covariance function of hip angles in gait data set",col=color_1)
 ```
 
 - Carry out a functional principal component analysis of the of the hip angles and
@@ -162,10 +177,10 @@ lines(pcs_temp$harmonics[2],lty=1,lwd=2,col=color_1)
 
 We can see that the first FPC clearly show something expected. The variability is larger in beginning and end of the cycle and less on the middle points. On the other hand, the second FPC shows a contrast between the first half and the second half of the cycle. Therefore, there two main sources of variation in the data set. On the one hand, the different variability among extremes and middle values and the differences between first half and second half.
 
-Next, we can plot the functional principal component scores (FPCs). We can see that the scores show the presence of groups and probably outliers as Boy 5 or Boy 38.
+Next, we can plot the functional principal component scores (FPCs). We can see that the scores show the presence of groups and potential outliers as Boy 5, 10, 28, 31 or 38.
 
 ```{r }
-plot(pcs_temp$scores,pch=19,col=color_1,main="FPCs scores",xlab="First score",ylab="Second score")
+plot(pcs_temp$scores,pch=19,col=color_1,main="FPCs scores",xlab="First score",ylab="Second score", ylim=c(-7,7))
 text(pcs_temp$scores,labels=paste("Boy",1:39),pos=1,col=color_5,cex=0.7)
 #number the different boys from 1 to 39
 ```
@@ -279,41 +294,60 @@ K(t)=\sqrt{\frac{2}{\pi}} \exp \left(-\frac{t^{2}}{2}\right) \quad t>0
 $$
 $h$ is a bandwidth, e.g., the 15 -th quantile of the ECDF of the set of values $\left\{\left\|x_{i}-x_{l}\right\|: i, l=1, \ldots, n\right\}$
 
-Since $x=\sum_i^w c_i e_i, w<n$, then
+
+Just plugging in  the previous formula we get
 
 $$
-M D_{n}\left(x_{i}\right)=\sum_{l=1}^{n} K\left(\frac{\left\|\sum_{j=1}^n c_{ij}e_{ij}-c_{lj}e_{lj}\right\|}{h}\right)
+M D_{n}\left(x_{i}\right)=\sqrt{\frac{2}{\pi}}\sum_{l=1}^{n} \exp\left(\frac{\left\|x_{i}-x_{l}\right\|^2}{2h^2}\right)=\sqrt{\frac{2}{\pi}}\sum_{l=1}^{n} \exp\left(\frac{\left\|x_{i}\right|^2+\left |x_{l}\right\|^2- 2<x_i ,x_{l}>}{2h^2}\right)
 $$
 
-and since the exponential of the sum is the product of exponentials:
 
-$$
-M D_{n}\left(x_{i}\right)=\sum_{l=1}^{n} \prod_{j=1}^n \exp \Big(\frac{\left\| c_{ij}e_{ij}-c_{lj}e_{lj}\right\|}{h}\Big)
-$$
 
+
+Using the Parseval's equality since $x=\sum_i^k c_i e_i, k<n$ and $x_i$ and $x_l$ are expressed in the same basis, then $e_i=e_l$ and $<x_i, x_{l}>=< \sum_jc_{i,j} e_{i,j},\sum_t c_{l,t} e_{i,t}>$ which is only not 0 when $j=t$ so $<x_i, x_l>=\sum_jc_{i,j}c_{l,j}$.
+$$
+M D_{n}\left(x_{i}\right)=\sqrt{\frac{2}{\pi}}\sum_{l=1}^{n} \exp\left(\frac{\sum_{j}c_{i,j}^2+ c_{l,j}^2+c_{i,j}c_{l,j}}{2h^2}\right)=\sqrt{\frac{2}{\pi}}\sum_{l=1}^{n}\prod_{j=1}^k \exp\left(\frac{c_{i,j}^2+ c_{l,j}^2+c_{i,j}c_{l,j}}{2h^2}\right)
+$$
 
 ### Functional Spatial Depth
 
 
 
-- The sign function: For $x \in \mathbb{R}$
+- The functional sign function is
 $$
-S(x)=\left\{\begin{array}{cl}
-\frac{x}{|x|} & \text { if } x \neq 0 \\
+FS(x)=\left\{\begin{array}{cl}
+\frac{x}{\|x\|} & \text { if } x \neq 0 \\
 0 & \text { if } x=0
-\end{array}=\left\{\begin{array}{cl}
-1 & \text { if } x>0 \\
-0 & \text { if } x=0 \\
--1 & \text { if } x<0
-\end{array}\right.\right.
+\end{array}\right.
 $$
-- Consider: A sample $x_{1}, \ldots, x_{n}$ from a real random variable $X$.
-- Let: $x_{(1)}, \ldots, x_{(n)}$ be the ordered sample.
-ь Then:
-$\sum_{i=1}^{n} S\left(x_{(1)}-x_{i}\right)=-(n-1) .$
-$\sum_{i=1}^{n} S\left(x_{m e d}-x_{i}\right)=0$
-$\sum_{i=1}^{n} S\left(x_{(n)}-x_{i}\right)=n-1$
-$ Spatial depth: S D\left(x_{i}\right)=1-\frac{1}{n-1}\left|\sum_{l=1}^{n} S\left(x_{i}-x_{l}\right)\right| .$
+
+
+and the functional spatial depth is 
+$$
+F S D\left(x_{i}\right)=1-\frac{1}{n-1}\left\|\sum_{l=1}^{n} F S\left(x_{i}-x_{l}\right)\right\|
+$$
+An expression for the last norm with a sample of functions $y_l$ is given in (I, Sguera, Galeano and Lillo, 2014):
+$$
+\begin{array}{l}
+\left\|\sum_{y \in\left(y_{l}\right)_{l=1, \ldots, n}} F S(x-y)\right\|^{2}= \\
+=\sum_{y, z \in\left(y_{l}\right)_{l=1, \ldots, n}} \frac{\langle x, x\rangle+\langle y, z\rangle-\langle x, y\rangle-\langle x, z\rangle}{\sqrt{\langle x, x\rangle+\langle y, y\rangle-2\langle x, y\rangle} \sqrt{\langle x, x\rangle+\langle z, z\rangle-2\langle x, z\rangle}}
+\end{array}
+$$
+
+Thus just plugging in the series expansion of the functions
+$$
+\begin{align}
+x_i=\sum_{j=1}^kc_{i,j}e_{i,j},\\
+y_l=\sum_{j=1}^kc_{l,j}e_{l,j},\\
+z_l=\sum_{j=1}^kc_{l,j}e_{l,j}
+\end{align}
+$$
+
+one obtains that 
+
+$$
+F S D\left(x_{i}\right)=1-\frac{1}{n-1}\sqrt{\sum_{l,l^\prime=1}^n\frac{\sum_{j=1}^kc_{i,j}^2+c_{l,j}c_{l^\prime,j}-c_{i,j}c_{l,j}-c_{i,j}c_{l^\prime,j}}{\sqrt{\sum_{j=1}^kc_{i,j}^2+c_{l,j}^2-2c_{i,j}c_{l,j}}\sqrt{\sum_{j=1}^kc_{i,j}^2+c_{l^\prime,j}^2-2c_{i,j}c_{l^\prime,j}}}}.
+$$
 
 
 
