@@ -729,6 +729,152 @@ R2
 
 Carry out unsupervised classification with the methods covered in Topic 4 on the average daily log precipitations of the aemet data set and draw conclusions from the analysis.
 
+```{r}
+# use final_smooth_daily_lprec_5_pen
+color_1 <- "deepskyblue2"
+plot(final_smooth_daily_lprec_5_pen,xlab="Day",ylab="Log precipitation (log mm)")
+title("Smoothed temperatures with penalized OLS and 5 Fourier basis")
+lines(final_smooth_daily_lprec_5_pen,lty=1,lwd=2,col=color_1)
+```
+
+
+
+
+
+## Methods based on basis expansions
+
+Next, we apply methods based on the coefficients of the temperatures from the Fourier basis. For that we define the matrix containing such coefficients and make a plot to show all of them. Note that now, the weather stations are the objects placed in the rows and the basis functions are the variables placed in the columns:
+
+```{r }
+X <- t(final_smooth_daily_lprec_5_pen$fd$coefs)
+X
+pairs(X,pch=19,col=color_1,main="Coefficients of the basis expansions")
+```
+
+We are going to run four different unsupervised classification methods for the data matrix $X$: 
+
+1. k-means.
+
+2. PAM.
+
+3. Agglomerative hierarchical clustering.
+
+4. Model based clustering.
+
+First, we run k-means. For that, note that we need to select the number of groups, so that we proceed as in the Multivariate Analysis course and compare the values of the average silhouette. We need to load the `factoextra` package and fix the maximum number of groups as $4$. The plot suggests the presence of only $4$ clusters, although 2 and 3 are also feasible. Therefore, we try $G=4$ and $100$ initial solutions, and plot the resulting solution after comparison of the $100$ final solutions. The solution looks quite good:
+
+```{r }
+library("factoextra")
+fviz_nbclust(X,kmeans,method="silhouette",k.max=4)
+kmeans_X <- kmeans(X,centers=4,iter.max=1000,nstart=100)
+color_2 <- "orange2"
+color_3 = "red"
+color_4 = "pink"
+colors_kmeans_X <- c(color_1,color_2, color_3, color_4)[kmeans_X$cluster]
+pairs(X,pch=19,col=colors_kmeans_X,
+      main="kmeans solution with the coefficients of the basis expansions")
+plot(final_smooth_daily_lprec_5_pen,xlab="Day",ylab="Temperature")
+title("kmeans solution with the coefficients of the basis expansions")
+lines(final_smooth_daily_lprec_5_pen,lty=1,lwd=2,col=colors_kmeans_X)
+library("cluster")
+sil_kmeans_X <- silhouette(kmeans_X$cluster,dist(X,"euclidean"))
+plot(sil_kmeans_X,col=color_1)
+```
+
+See also the map of Canada with the resulting clustering solution. Apparently, the solution separates the weather stations in the south and the north which seems reasonable.
+
+```{r }
+library(maps)
+place <- aemet$df$name
+latitude=aemet$df$latitude
+longitude=aemet$df$longitude
+coordinates=data.frame(longitude, latitude)
+map('world',ylim=c(27,45),xlim=c(-19,5))
+map('world',region="Spain",add=TRUE)
+points(coordinates,col=colors_kmeans_X,pch=19)
+```
+
+Second, we run PAM. Again, we select the number of groups with the average silhouette. The plot suggests the presence of $2$ clusters as before. Therefore, we try $G=2$ and plot the resulting solution. The solution is close to the one obtained with k-means. However, the silhouette is not as good as the one given by k-means. Indeed, there are close weather stations in different groups:
+
+```{r }
+fviz_nbclust(X,cluster::pam,method="silhouette",k.max=4)
+pam_X <- pam(X,k=2,metric="manhattan",stand=FALSE)
+colors_pam_X <- c(color_1,color_2)[pam_X$cluster]
+pairs(X,pch=19,col=colors_pam_X,
+      main="PAM solution with the coefficients of the basis expansions")
+plot(final_smooth_daily_lprec_5_pen,xlab="Day",ylab="Temperature")
+title("PAM solution with the coefficients of the basis expansions")
+lines(final_smooth_daily_lprec_5_pen,lty=1,lwd=2,col=colors_pam_X)
+sil_pam_X <- silhouette(pam_X$clustering,dist(X,"manhattan"))
+plot(sil_pam_X,col=color_1)
+map('world',ylim=c(27,45),xlim=c(-19,5))
+map('world',region="Spain",add=TRUE)
+points(coordinates,col=colors_pam_X,pch=19)
+```
+
+Third, we run agglomerative hierarchical clustering with the average linkage. For that, we need to compute initially the distances between the coefficients. We choose the Manhattan distance that somehow takes into account the presence of potential outliers. Then, we run the procedure and plot the dendogram obtained that suggest the presence of two clusters as in the previous two cases. Therefore, we try $G=2$ and plot the resulting solution. The solution is similar to the obtained with k-means:
+
+```{r }
+dist_X <- daisy(X,metric="manhattan",stand=TRUE)
+average_X <- hclust(dist_X,method="average")
+plot(average_X,main="Average linkage",cex=0.8)
+rect.hclust(average_X,k=2,border=color_1)
+colors_average_X <- c(color_1,color_2)[cutree(average_X,2)]
+pairs(X,pch=19,col=colors_average_X,
+      main="Hierarchical clustering solution with the coefficients of the basis expansions")
+plot(final_smooth_daily_lprec_5_pen,xlab="Day",ylab="Log precipitation (log mm)")
+title("Hierarchical clustering solution with the coefficients of the basis expansions")
+lines(final_smooth_daily_lprec_5_pen,lty=1,lwd=2,col=colors_average_X)
+sil_average_X <- silhouette(cutree(average_X,2),dist(X,"euclidean"))
+plot(sil_average_X,col=color_1)
+map('world',ylim=c(27,45),xlim=c(-19,5))
+map('world',region="Spain",add=TRUE)
+points(coordinates,col=colors_average_X,pch=19)
+```
+
+Fourth, we run MClust, the most popular model-based clustering method. For that, we need to load the `mclust` package and compute the value of the BIC for the all possible models with maximum number of components equal to $4$. Then, we plot the results and check that the best choice is $G=4$. Note that the function returns -BIC, so we have to select the maximum value of this quantity. Consequently, we run Mclust for the optimal solution. Mclust selects a model with $4$ clusters in which the covariance matrices are ellipsoidal and with the same eigenvectors. The solution appears to be more complex although it might have some sense. Take into account that the main goal of MClust is density estimation of the coefficients and maybe there is an effect of potential outliers.
+
+```{r }
+library(mclust)
+BIC_X <- mclustBIC(X,G=1:4)
+BIC_X
+plot(BIC_X)
+Mclust_X <- Mclust(X,x=BIC_X)
+summary(Mclust_X)
+#?mclustModelNames
+color_3 <- "violet"
+color_4 <- "chartreuse"
+colors_Mclust_X <- c(color_1,color_2,color_3,color_4)[Mclust_X$classification]
+pairs(X,pch=19,col=colors_Mclust_X,
+      main="MClust solution with the coefficients of the basis expansions")
+plot(final_smooth_daily_lprec_5_pen,xlab="Day",ylab="Temperature")
+title("MClust solution with the coefficients of the basis expansions")
+lines(final_smooth_daily_lprec_5_pen,lty=1,lwd=2,col=colors_Mclust_X)
+maps::map('world',ylim=c(27,45),xlim=c(-19,5))
+maps::map('world',region="Spain",add=TRUE)
+points(coordinates,col=colors_Mclust_X,pch=19)
+```
+
+## A functional k-means (k-medoids) procedure
+
+Next, we run the functional k-means (k-medoids) procedure implemented in the `fda.usc` package. For that, we have to transform the temperatures in the `fda` format to the `fda.usc` format. Then, we can run the method. The function `kmeans.fd` uses by default the Fraiman and Muniz depth to compute the set of depths and then compute the sample functional median after trimming with $\alpha=0.05$. For simplicity, we fix $G=2$ and plot the resulting solution, which is similar to the one given by k-means and agglomerative hierarchical clustering with the average linkage:
+
+```{r }
+library(fda.usc)
+tt <- lprec_argvals
+Canadian_temp_smooth <- eval.fd(tt,final_smooth_daily_lprec_5_pen$fd)
+fdataobj_temp <- fdata(t(Canadian_temp_smooth),tt)
+kmeans_temp <- kmeans.fd(fdataobj_temp,ncl=2,cluster.size=0,max.iter=500,draw=FALSE)
+colors_kmeansfd <- c(color_1,color_2)[kmeans_temp$cluster]
+par(mfrow=c(1,1))
+plot(final_smooth_daily_lprec_5_pen,xlab="Day",ylab="Temperature")
+title("Functional kmeans solution")
+lines(final_smooth_daily_lprec_5_pen,lty=1,lwd=2,col=colors_kmeansfd)
+maps::map('world',ylim=c(27,45),xlim=c(-19,5))
+maps::map('world',region="Spain",add=TRUE)
+points(coordinates,col=colors_kmeansfd,pch=19)
+```
+
 # Exercise 3
 
 
