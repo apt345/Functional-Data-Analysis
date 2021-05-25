@@ -50,6 +50,8 @@ lprec_argvals=aemet$logprec$argvals
 lprec_rangeval=aemet$logprec$rangeval
 ```
 
+The data (shown by joining the points with lines) is shown in the following plots. We can see that temperatures are colder in winter and hotter in summer, as expected, although some places have more variability than others. Precipitations are in general less abundant in summer than during the rest of the year. However, there is also great variability on the quantity of precipitations around different stations.
+
 ```{r}
 color_1 <- "deepskyblue2"
 matplot(temp_argvals,average_daily_temp,type="l",lty=1,col=color_1,
@@ -59,16 +61,16 @@ matplot(lprec_argvals,average_daily_lprec,type="l",lty=1,col=color_1,
 
 ```
 
-The first step is to smooth the both the temperatures and precipitations using roughness penalties.
+The first step is to smooth both the temperatures and precipitations by doing a Fourier Basis expansion, since the data are periodic in the interval (0, 365) and fitting it to the data with roughness penalty, as done in the first assignment. In order to do this, Cross Validation can be used to find $K$ minimizing the sum of squares. In order to reduce computational costs, Generalized Cross Validation (GCV) is used. The problem with this method is that it tends to select a very high number of basis functions, thus basically interpolating the data and creating very rough (not smoothed) curves. The approach that solves this is penalized smoothing. The following plots illustrate the difference between the different (odd) number of basis functions.
 
-```{r}
+```{r, results="hide"}
 fourier_basis_5 <- create.fourier.basis(rangeval=lprec_rangeval,nbasis=5)
 fourier_basis_7 <- create.fourier.basis(rangeval=lprec_rangeval,nbasis=7)
 fourier_basis_9 <- create.fourier.basis(rangeval=lprec_rangeval,nbasis=9)
 fourier_basis_11 <- create.fourier.basis(rangeval=lprec_rangeval,nbasis=11)
 ```
 
-```{r}
+```{r, results="hide"}
 
 smooth_temp_5 <- smooth.basis(argvals=temp_argvals,y=average_daily_temp[,1:73],
                                        fdParobj=fourier_basis_5)
@@ -103,22 +105,22 @@ smooth_lprec_11 <- smooth.basis(argvals=lprec_argvals,y=average_daily_lprec[,1:7
 
 
 
-```{r}
-plot(smooth_temp_5,pch=20,col=color_1,
-     main="Smoothing with OLS with 11 Fourier basis functions",xlab="day of the year",ylab="Temperature (C)")
+```{r, results="hide"}
+plot(smooth_temp_5,pch=20,col=color_1,xlab="day of the year",ylab="Temperature (C)")
+title(main="Smoothing with OLS with 5 Fourier basis functions")
 lines(smooth_temp_5,lty=1,lwd=3,col=color_1)
 
-plot(smooth_temp_7,pch=20,col=color_1,
-     main="Smoothing with OLS with 11 Fourier basis functions",xlab="day of the year",ylab="Temperature (C)")
+plot(smooth_temp_7,pch=20,col=color_1,xlab="day of the year",ylab="Temperature (C)")
+title(main="Smoothing with OLS with 7 Fourier basis functions")
 lines(smooth_temp_7,lty=1,lwd=3,col=color_1)
 
 
-plot(smooth_temp_9,pch=20,col=color_1,
-     main="Smoothing with OLS with 11 Fourier basis functions",xlab="day of the year",ylab="Temperature (C)")
+plot(smooth_temp_9,pch=20,col=color_1,xlab="day of the year",ylab="Temperature (C)")
+title(main="Smoothing with OLS with 9 Fourier basis functions")
 lines(smooth_temp_9,lty=1,lwd=3,col=color_1)
 
-plot(smooth_temp_11,pch=20,col=color_1,
-     main="Smoothing with OLS with 11 Fourier basis functions",xlab="day of the year",ylab="Temperature (C)")
+plot(smooth_temp_11,pch=20,col=color_1,xlab="day of the year",ylab="Temperature (C)")
+title(main="Smoothing with OLS with 11 Fourier basis functions")
 lines(smooth_temp_11,lty=1,lwd=3,col=color_1)
 
 
@@ -126,26 +128,26 @@ lines(smooth_temp_11,lty=1,lwd=3,col=color_1)
 ```
 
 
-```{r}
-plot(smooth_lprec_5,pch=20,col=color_1,
-     main="Smoothing with OLS with 11 Fourier basis functions",xlab="day of the year",ylab="lprecerature (C)")
+```{r, results="hide"}
+plot(smooth_lprec_5,pch=20,col=color_1,xlab="day of the year",ylab="log precipitation (log mm)")
+title(main="Smoothing with OLS with 5 Fourier basis functions")
 lines(smooth_lprec_5,lty=1,lwd=3,col=color_1)
 
-plot(smooth_lprec_7,pch=20,col=color_1,
-     main="Smoothing with OLS with 11 Fourier basis functions",xlab="day of the year",ylab="lprecerature (C)")
+plot(smooth_lprec_7,pch=20,col=color_1,xlab="day of the year",ylab="log precipitation (log mm)")
+title(main="Smoothing with OLS with 7 Fourier basis functions")
 lines(smooth_lprec_7,lty=1,lwd=3,col=color_1)
 
 
-plot(smooth_lprec_9,pch=20,col=color_1,
-     main="Smoothing with OLS with 11 Fourier basis functions",xlab="day of the year",ylab="lprecerature (C)")
-lines(smooth_lprec_9,lty=1,lwd=3,col=color_1)
+plot(smooth_lprec_9,pch=20,col=color_1)
+title(main="Smoothing with OLS with 9 Fourier basis functions")
+lines(smooth_lprec_9,lty=1,lwd=3,col=color_1,xlab="day of the year",ylab="log precipitation (log mm)")
 
-plot(smooth_lprec_11,pch=20,col=color_1,
-     main="Smoothing with OLS with 11 Fourier basis functions",xlab="day of the year",ylab="lprecerature (C)")
+plot(smooth_lprec_11,pch=20,col=color_1,xlab="day of the year",ylab="log precipitation (log mm)")
+title(main="Smoothing with OLS with 11 Fourier basis functions")
 lines(smooth_lprec_11,lty=1,lwd=3,col=color_1)
 ```
 
-The best one is the one with 7 basis functions for temperature and 5 for logprecipitation. Now find the penalization parameter.
+The best smoothing is the one with 7 basis functions for temperature and 5 for the logarithm of the precipitation. Now we just need to find the penalization parameter by minimizing the value obtained with Generalized Cross Validation. 
 
 ```{r }
 #penalization parameter for temperatures
@@ -187,8 +189,8 @@ plot(lambdas,gcv_lambdas,pch=19,col=color_1,main="GCV criterion for lambdas of l
 #lambdas[which.min(gcv_lambdas)]
 ```
 
-2250 for temperatures and 13250 for log precipitations. The final smoothed functions are shown in the following plots.
-```{r}
+The optimal values are 2250 for temperatures and 13250 for log precipitations. The final smoothed functions are shown in the following plots.
+```{r, results="hide"}
 Fourier_pen_7 <- fdPar(fdobj=fourier_basis_7,Lfdobj=2,lambda=2250)
 smooth_dailyAv_temp_7_pen <- smooth.basis(argvals=temp_argvals,y=average_daily_temp,
                                            fdParobj=Fourier_pen_7)
@@ -204,9 +206,9 @@ title("Smoothed log prec with roughness penalty with 5 Fourier basis")
 lines(smooth_daily_lprec_5_pen,lty=1,lwd=2,col=color_1)
 ```
 
-Finally, since we are doing regression, it is interesting to check for outliers and remove them, if any.
+Finally, since we are doing regression, it is interesting to check for outliers and remove them, if any. We can do this using depths, that are a measure of the centrality of the functions, as done in the second assignment.
 
-```{r}
+```{r, eval=FALSE}
 #outliers for temperature
 temp_smooth <- eval.fd(temp_argvals,smooth_dailyAv_temp_7_pen$fd)
 fdataobj_temp <- fdata(t(temp_smooth),temp_argvals)
@@ -218,7 +220,7 @@ out_weighting
 ```
 
 
-```{r}
+```{r, eval=FALSE}
 #outliers log precipitation
 lprec_smooth <- eval.fd(lprec_argvals,smooth_daily_lprec_5_pen$fd)
 fdataobj_lprec <- fdata(t(lprec_smooth),lprec_argvals)
@@ -231,7 +233,7 @@ out_weighting
 
 No outliers were found for precipitation but an outlier was found in temperatures: Navacerrada. So, we proceed to delete this observation and thus do the regression with the remaining 72 stations with temperature and log precipitation.
 
-```{r}
+```{r, results="hide"}
 #which(colnames(average_daily_temp)=="NAVACERRADA,PUERTO1980-2009")
 #The outlier is column 45
 Fourier_pen_7 <- fdPar(fdobj=fourier_basis_7,Lfdobj=2,lambda=2250)
@@ -253,20 +255,21 @@ lines(final_smooth_daily_lprec_5_pen,lty=1,lwd=2,col=color_1)
 ## Scalar on function Regression
 
 
-For exemplifying scalar-on-function regression, we consider as response the **average yearly of the base $10$ logarithm of precipitation**. The **average daily of the base $10$ logarithm of precipitation** is contained in the object `CanadianWeather$dailyAv[,,3]`, that is a matrix of size $365\times35$ where rows correspond to days and columns correspond to weather stations. Therefore, every cell in this matrix contains the base $10$ logarithm of the **average daily precipitation** of a weather station in a single day. Then, to obtain the **average yearly of the base $10$ logarithm of precipitation (the scalar response)**, we need to take the average of the daily observations in each weather station over the whole year. Additionally, we skip the precipitations corresponding to Resolute:
+We consider as response the **average yearly of the base $10$ logarithm of precipitation**. The **average daily of the base $10$ logarithm of precipitation** is contained in the aemet dataset and it is a matrix of size $365\times73$ where rows correspond to days and columns correspond to weather stations. Therefore, every cell in this matrix contains the base $10$ logarithm of the **average daily precipitation** of a weather station in a single day. Then, to obtain the **average yearly of the base $10$ logarithm of precipitation (the scalar response)**, we need to take the average of the daily observations in each weather station over the whole year. Additionally, we skip the precipitations corresponding to Navacerrada, that was flagged as an outlier:
 
 ```{r }
 log_prec <- colMeans(average_daily_lprec[, c(1:44, 46:73)])
 ```
 
-We have a look at the histogram and boxplot of the average yearly of the base $10$ logarithm of precipitation and see that the data is bimodal (probably because the presence of groups), and more or less symmetric:
+We have a look at the histogram and boxplot of the average yearly of the base $10$ logarithm of precipitation and see that the data is unimodal and slightly asymmetric:
 
 ```{r }
+library(ggplot2)
 par(mfrow=c(1,2))
-hist(log_prec,col=color_1,xlab="Log-precipitation",
-     main="Histogram of average yearly of the base 10 logarithm of precipitation")
-boxplot(log_prec,col=color_1,
-        main="Boxplot of average yearly of the base 10 logarithm of precipitation")
+
+hist(log_prec,col=color_1,xlab="Log-precipitation")
+boxplot(log_prec,col=color_1, main="Boxplot of log prec")
+
 ```
 
 
@@ -349,7 +352,7 @@ betalist_11[[1]] <- beta0_basis_11
 betalist_11[[2]] <- beta_basis_11
 ```
 
-Next, we call the function `fRegress` of the `fda` package to carry out the fitting of the regression. We do this for the four values of $K$:
+Next, we call the function `fRegress` of the `fda` package to carry out the fitting of the regression. We do this for the four values of $K$, but it was impossible to do for $k=5$ because the matrix was singular, so we ommit it in the following process.
 
 ```{r }
 #fit_log_prec_temp_ols_5 <- fRegress(log_prec,templist_5,betalist_5)
@@ -359,9 +362,9 @@ fit_log_prec_temp_ols_9 <- fRegress(log_prec,templist_9,betalist_9)
 fit_log_prec_temp_ols_11 <- fRegress(log_prec,templist_11,betalist_11)
 ```
 
-The object `fit_log_prec_temp_ols_5` (similar for other K's) contains many outputs. First, we focus on the estimation of the intercept and the functional slope of the model. For that, we define an object called `betaestlist_5`  (similar for other K's) containing the information given by the fitting about these two objects. Then, we plot the four estimates of the functional slope of the model. We can see that the larger the value of $K$, the more ups and downs the estimate of the functional slope of the model:
+First, we focus on the estimation of the intercept and the functional slope of the model. In the following plots one can see the four estimates of the functional slope of the model. We can see that the larger the value of $K$, the more ups and downs the estimate of the functional slope of the model and that the slope is in general different through the values of $K$:
 
-```{r }
+```{r, results="hide"}
 # betaestlist_5 <- fit_log_prec_temp_ols_5$betaestlist
 betaestlist_7 <- fit_log_prec_temp_ols_7$betaestlist
 betaestlist_9 <- fit_log_prec_temp_ols_9$betaestlist
@@ -381,7 +384,7 @@ title("Estimate of functional slope with OLS and 11 Fourier basis")
 lines(betaestlist_11[[2]]$fd,lty=1,lwd=2,col=color_1)
 ```
 
-On the other hand, we can have a look at the estimates of the intercept as follows:
+On the other hand, we can have a look at the estimates of the intercept, which are close but different:
 
 ```{r }
 #coef(betaestlist_5[[1]])
@@ -390,7 +393,7 @@ coef(betaestlist_9[[1]])
 coef(betaestlist_11[[1]])
 ```
 
-Next, we define the predicted values of the four fittings in the objects called `pred_ols_5` (similar for the other values of $K$) and compare their values. The main conclusion is that although the estimates of the functional slope $\beta$ are somehow different, the predicted values of the **average yearly of the base $10$ logarithm of precipitation** with the four different values are not so different. To see this point, have a look at the four sets of predicted values, then obtain a **scatterplot matrix**, the **sample correlation matrix** and a `corrplot`. All of them suggest that the predicted values are quite close. The largest difference is for $K=5$ and $K=11$, but even in this case, the sample correlation coefficient is $0.9523$:
+Next, we define the predicted values of the four fittings and compare their values. The main conclusion is that although the estimates of the functional slope $\beta$ are somehow different, the predicted values of the **average yearly of the base $10$ logarithm of precipitation** with the three different values are almost identical, with more than 98% correlation as can be seen in the following scatterplot and as the corrplot illustrates.
 
 ```{r }
 #pred_ols_5 <- fit_log_prec_temp_ols_5$yhatfdobj
@@ -401,13 +404,13 @@ pred_ols <- cbind(pred_ols_7,pred_ols_9,pred_ols_11)
 colnames(pred_ols) <- c("K=7","K=9","K=11")
 pairs(pred_ols,pch=19,col=color_1)
 R_pred_ols <- cor(pred_ols)
-R_pred_ols
+#R_pred_ols
 library(corrplot)
 par(mfrow=c(1,1))
 corrplot(R_pred_ols,is.corr=TRUE)
 ```
 
-Also, from the predicted values, we obtain the residuals and the residual variance of the four fittings. We can see that the residual variance for $K=5$ is different that those for $K=7$, $K=9$ and $K=11$. Additionally, we make a plot of the residuals and we can see that the case $K=5$ appears to be no appropriate, while $K=7$, $K=9$ and $K=11$ are acceptable and very close to each other.
+Also, from the predicted values, we obtain the residuals and the residual variance of the four fittings. We can see that the residual variance for $K=7$ is the smallest one but in general the results are close.
 
 ```{r }
 #res_ols_5 <- as.vector(log_prec-pred_ols_5)
@@ -437,7 +440,7 @@ plot(1:72,res_ols_11,pch=19,col=color_1,
 abline(h=0)
 ```
 
-The predicted values also allow us to compute the **coefficient of determination** for the four values of $K$. For that we compute first the explained sums of squares for the four values of $K$ and the total sums of squares, and obtain the ratio between these quantities. As it can be seen, the coefficients of determination obtained are $0.7731$, $0.8238$, $0.8519$ and $0.8525$, respectively. Note the effect of $K$ in this estimation. Therefore, we compute also the **adjusted coefficient of determination** that gives us values $0.7340$, $0.7781$, $0.7986$ and $0.7820$. We can see that the adjusted coefficient of determination for $K=5$ is different than those of $K=7$, $K=9$ and $K=11$. In any case, the main conclusion is that the daily temperatures explain **linearly** a large amount of annual precipitation:
+The predicted values also allow us to compute the **coefficient of determination** for the three values of $K$. For that we compute first the explained sums of squares for the three values of $K$ and the total sums of squares, and obtain the ratio between these quantities. The coefficients of determination obtained are $0.5620$, $0.5757$ and $0.5894$ respectively. Note the effect of $K$ in this estimation. The higher the $K$, the better, although the results are not very good. Therefore, we compute also the **adjusted coefficient of determination** that gives us values $0.4484$, $0.4229$, $0.3930$. We can see that the adjusted coefficient of determination for $K=7$ is the best one although not great. The main conclusion is that the daily temperatures don't explain **linearly** a large amount of annual precipitation, just around half of its variance.
 
 ```{r }
 #ESS_5 <- sum((pred_ols_5-mean(log_prec))^2)
@@ -448,22 +451,22 @@ TSS <- sum((log_prec-mean(log_prec))^2)
 # R2_5 <- ESS_5/TSS
 # R2_5
 R2_7 <- ESS_7/TSS
-R2_7
+#R2_7
 R2_9 <- ESS_9/TSS
-R2_9
+#R2_9
 R2_11 <- ESS_11/TSS
-R2_11
+#R2_11
 # R2_adj_5 <- 1-(1-R2_5)*(35-1)/(35-5-1)
 # R2_adj_5
 R2_adj_7 <- 1-(1-R2_7)*(35-1)/(35-7-1)
-R2_adj_7
+#R2_adj_7
 R2_adj_9 <- 1-(1-R2_9)*(35-1)/(35-9-1)
-R2_adj_9
+#R2_adj_9
 R2_adj_11 <- 1-(1-R2_11)*(35-1)/(35-11-1)
-R2_adj_11
+#R2_adj_11
 ```
 
-Then, having all the previous into account, the question is which $K$ is the most appropriate? Apparently, $K=5$ is not a good option but we need something more reliable like the GCV criterion. Then, we compute the value of the GCV for the four fittings. In this case, $K=7$ is the one with smaller GCV, so it seems that it is the best choice among the four values of $K$ considered:
+Then, having all the previous into account, the question is which $K$ is the most appropriate? Apparently, $K=7$ is a good option but we need something more reliable like the GCV criterion. Then, we compute the value of the GCV for the four fittings. In this case, $K=7$ is the one with smaller GCV, so it seems that it is the best choice among the three values of $K$ considered:
 
 ```{r }
 # gcv_5 <- 34 / (34 - 5 - 1)^2 * sum(res_ols_5^2)
@@ -476,9 +479,9 @@ gcv_11 <- 72 / (72 - 11 - 1)^2 * sum(res_ols_11^2)
 gcv_11
 ```
 
-Once that we have determined our estimate of the functional slope of the model, i.e., the one with $K=9$, we obtain confidence bands for such estimate. For that, we use the function `fRegress.stderr` that provides standard error functions. Several steps should be taken to define the confidence bands using information also from the object `smooth_temp_9`:
+Once that we have determined our estimate of the functional slope of the model, i.e., the one with $K=7$, we obtain confidence bands for such estimate. For that, we use the function `fRegress.stderr` that provides standard error functions. Several steps should be taken to define the confidence bands using information also from the smoothed temperatures object `smooth_temp_7`:
 
-```{r }
+```{r, results="hide" }
 Sigma_E <- res_var_ols_7 * diag(72)
 y2cMap <- smooth_temp_7$y2cMap
 fit_log_prec_temp_ols_7_stderr <- fRegress.stderr(fit_log_prec_temp_ols_7,y2cMap,Sigma_E)
@@ -494,7 +497,7 @@ lines(betaestlist_7[[2]]$fd+1.96*se_beta_est,lty=1,lwd=2,col=color_2)
 
 ## Functional principal component regression
 
-Next, we carry out the estimation using **functional principal component regression**. For that, we perform **functional principal components (FPCs) analysis** to obtain the **functional principal component scores (FPCSs)**. For that, it is necessary to take into account that the maximum number of FPCs given by the function `pca.fd` is the number of basis functions used to fit the data, that in this case is equal to $7$. Therefore, we obtain the first $7$ FPCs (object `fpcs_temp`) and, subsequently, the FPCSs (object `fpcss_temp`) that are plotted to check their main characteristics. In particular, the first and the second FPCSs show the presence of an outlier (other PCSSs also do it as well), while other FPCSs also show the presence of some grouping:
+Next, we carry out the estimation using **functional principal component regression**. For that, we perform **functional principal components (FPCs) analysis** to obtain the **functional principal component scores (FPCSs)**. For that, it is necessary to take into account that the maximum number of FPCs given by the function `pca.fd` is the number of basis functions used to fit the data, that in this case is equal to $7$. Therefore, we obtain the first $7$ FPCs (object `fpcs_temp`) and, subsequently, the FPCSs (object `fpcss_temp`) that are plotted to check their main characteristics. In particular, the third and the fourth FPCSs show the presence of an outlier (that was not detected with depths), while other FPCSs also show the presence of some grouping:
 
 ```{r }
 pcs_temp <- pca.fd(final_smooth_dailyAv_temp_7_pen$fd,nharm=7,harmfdPar=fdPar(final_smooth_dailyAv_temp_7_pen$fd))
@@ -505,7 +508,7 @@ colnames(fpcss_temp) <- c("FPCSs1","FPCSs2","FPCSs3","FPCSs4","FPCSs5",
 pairs(fpcss_temp,col=color_1,pch=19)
 ```
 
-Remember that in Topic 2, we determined that $2$ FPCs explained more than the $95%$ of the total variability of the temperatures. Nevertheless, the idea is to compare the results when taking a number of FPCs from $1$ to $9$. For that, and for each value of $L$ ranging from $1$ to $9$, we proceed to estimate the coefficients $b_1,b_2,\ldots$ using the centered annual precipitations and the FPCSs and, subsequently, the estimate of the **functional slope of the model** $\beta$. Note that, to do all the previous, we are using that the FPCSs are uncorrelated. Therefore, the estimates of the coefficients $b_1,b_2,\ldots$ do no vary if we obtain the OLS for the different values of $L$. In other words, the estimate of $b_1$ is the same if we estimate the model only for $L=1$ or for $L=2$. Thus, we construct the estimate of the functional slope of the model recursively starting with the one for $L=1$ and then adding the new information given a new FPCSs. We also obtain estimates of the error variance and compute the value of the **GCV** and **BIC** for comparison of the different values of $L$. The code to obtain all the previous is as follows:
+We will see later than $2$ FPCs are able to explain more than the $95%$ of the total variability of the temperatures. Nevertheless, the idea is to compare the results when taking a number of FPCs from $1$ to $7$. For that, and for each value of $L$ ranging from $1$ to $7$, we proceed to estimate the coefficients $b_1,b_2,\ldots$ using the centered annual precipitations and the FPCSs and, subsequently, the estimate of the **functional slope of the model** $\beta$. Note that, to do all the previous, we are using that the FPCSs are uncorrelated. Therefore, the estimates of the coefficients $b_1,b_2,\ldots$ do no vary if we obtain the OLS for the different values of $L$. In other words, the estimate of $b_1$ is the same if we estimate the model only for $L=1$ or for $L=2$. Thus, we construct the estimate of the functional slope of the model recursively starting with the one for $L=1$ and then adding the new information given a new FPCSs. We also obtain estimates of the error variance and compute the value of the **GCV** and **BIC** for comparison of the different values of $L$.
 
 ```{r }
 log_prec_cen <- scale(log_prec,center=TRUE,scale=FALSE)
@@ -537,9 +540,9 @@ plot(1:7,gcv_est,col=color_1,pch=19,main="Values of GCV")
 plot(1:7,bic_est,col=color_1,pch=19,main="Values of BIC")
 ```
 
-Then, we have a look at the estimate of the functional slope `beta` with $L=6$. Unfortunately, there is no function in the `fda` package that calculates confidence bands for this estimate, so we will not consider them in this case. The results indicate that the estimate of $\beta$ with this method is less affected by variability than the estimate based on a basis expansion of $\beta$. This is probably due to the reduction in variability due to the elimination of the last functional principal components:
+Then, we have a look at the estimate of the functional slope `beta` with $L=6$. The results indicate that the estimate of $\beta$ with this method (blue) is almost the same as the one with the basis expansion (orange):
 
-```{r }
+```{r, results="hide" }
 bs_fit <- lm(log_prec_cen~fpcss_temp[,1:6]-1)
 bs_est <- summary(bs_fit)$coef
 beta_est <- bs_est[1,1] * fpcs_temp[1]
@@ -551,7 +554,7 @@ lines(beta_est,lty=1,lwd=2,col=color_1)
 lines(betaestlist_7[[2]]$fd,lty=1,lwd=2,col=color_2)
 ```
 
-Finally in this section, let's see the residuals and the predictions with this method. These are compared with those with the basis expansion of $\beta$ and the two sets of predictions appear to be very similar. Also, we compute the residual variance and the $R^2$ and $R_{adj}^2$ that suggest that this fitting is as good as the one with a basis expansion of $\beta$, but has less variability.
+Finally in this section, let's see the residuals and the predictions with this method. These are compared with those with the basis expansion of $\beta$ and the two sets of predictions appear to be very similar. Also, we compute the residual variance and the $R^2$ and $R_{adj}^2$ that suggest that this fitting is better than the previous one, with an $R^2=0.56$ and an $R_{adj}^2=0.52$.
 
 ```{r }
 plot(1:72,residuals(bs_fit),col=color_1,pch=19,main="Residuals with FPCs")
@@ -575,11 +578,9 @@ R2_adj_fpcs
 
 ### Preliminar steps
 
-As with scalar-on-function regression, we use the **Canadian Weather** data set (Ramsay and Silverman, 2005) to illustrate the steps to carry out an function-on-function regression. Here, we will try to predict the base $10$ logarithm of the average daily precipitation from the average daily temperature.
+To carry out function-on-function regression, we need the smoothed **temperatures** (average daily temperature) and **precipitations** (base $10$ logarithm of the average daily precipitation). We smoothed the temperatures and precipitations, so we can just use the final ones without Navacerrada.
 
-To carry out function-on-function regression, we need the smoothed **temperatures** (average daily temperature) and **precipitations** (base $10$ logarithm of the average daily precipitation). We smoothed the temperatures before so we have to smooth the log-precipitations (without Resolute). For simplicity, we will take $K=9$ for smoothing the log-precipitations, as we did with the temperatures. Consequently, here just simply smooth the precipitations with such basis functions and plot the resulting smoothed functions, that leads to conclude that the precipitations, like the temperatures, are smooth enough:
-
-```{r }
+```{r, rsults="hide" }
 plot(final_smooth_dailyAv_temp_7_pen,lty=1,lwd=2,xlab="Day",ylab="Temperature")
 title("Smoothed temperatures with OLS and 7 Fourier basis")
 lines(final_smooth_dailyAv_temp_7_pen,lty=1,lwd=2,col=color_1)
@@ -590,22 +591,20 @@ lines(final_smooth_daily_lprec_5_pen,lty=1,lwd=2,col=color_1)
 
 ## Sample functional principal components of temperatures and precipitations
 
-Here, we are going to obtain the **sample functional principal components** corresponding to the smoothed temperatures and precipitations. These are necessary to carry out the estimation of the model parameters in the function-on-function regression. For that, we will use the function `pca.fd` of the `fda` package, as we did in the document `Topic-2.html`. In particular, we take `nharm` is the number of FPCs that we want to obtain as $9$, that is the maximum allowed because we have taken $9$ Fourier basis:
+Here, we are going to obtain the **sample functional principal components** corresponding to the smoothed temperatures and precipitations. These are necessary to carry out the estimation of the model parameters in the function-on-function regression. For that, we will use the function `pca.fd` of the `fda` package. In particular, we take `nharm` is the number of FPCs that we want to obtain as $7$ for temperatures and 5 for logarithm of precipitations, that is the maximum allowed because we have taken $7$ and 5 Fourier basis, respectively:
 
 ```{r }
 pcs_temp <- pca.fd(final_smooth_dailyAv_temp_7_pen$fd,nharm=7,harmfdPar=fdPar(final_smooth_dailyAv_temp_7_pen$fd))
 pcs_prec <- pca.fd(final_smooth_daily_lprec_5_pen$fd,nharm=5,harmfdPar=fdPar(final_smooth_daily_lprec_5_pen$fd))
 ```
 
-In the output: (1) `harmonics` corresponds to the sample eigenfunctions; (2) `values` corresponds to the eigenvalues; (3) `scores` corresponds to the sample FPC scores; (4) `varprop` corresponds to the proportion of variance explained by each eigenfunction; and (5) `meanfd` corresponds to the functional mean. 
-
-We start by having a look at the eigenvalues. For that we define a table that includes the eigenvalues and the proportion of variability explained by the FPCs:
+We start by having a look at the eigenvalues. For that we look at the proportion of variability explained by the FPCs:
 
 ```{r }
 table_fpcs_temp <- cbind(pcs_temp$values[1:7],pcs_temp$varprop,cumsum(pcs_temp$varprop))
-table_fpcs_temp
+#table_fpcs_temp
 table_fpcs_prec <- cbind(pcs_prec$values[1:5],pcs_prec$varprop,cumsum(pcs_prec$varprop))
-table_fpcs_prec
+#table_fpcs_prec
 par(mfrow=c(2,2))
 plot(1:7,table_fpcs_temp[,1],pch=19,col=color_1,type="b",
      main="Sample eigenvalues of temperatures",
@@ -621,9 +620,9 @@ plot(1:5,table_fpcs_prec[,2],pch=19,col=color_1,type="b",
      xlab="Number of eigenvalue",ylab="Value")
 ```
 
-From the table, we can see that the first $2$ FPCs in both cases are able to explain the $99.4%$ and the $96.9%$ of the total variability. We make a plot of the first two eigenfunctions for both temperatures and precipitations that have very similar behaviors. The first FPC shows that, in both cases, the variability is larger in autumn and winter than in the summer. On the other hand, the second FPC shows, in both cases, a contrast between the winter and the summer temperatures/precipitations. Therefore, there are two main sources of variation in both temperatures and precipitations. On the one hand, the different variability among seasons and, on the other hand, the differences between winter and summer:
+We can see that the first $2$ FPCs in both cases are able to explain almost all the variability. In particular, the $99.4%$ and the $96.9%$ of the total variability. We make a plot of the first two eigenfunctions for both temperatures and precipitations that have very similar behaviors. The first FPC shows that, in both cases, the variability is larger in autumn and winter than in the summer. On the other hand, the second FPC shows, in both cases, a contrast between the winter and the summer temperatures/precipitations. Therefore, there are two main sources of variation in both temperatures and precipitations. On the one hand, the different variability among seasons and, on the other hand, the differences between winter and summer:
 
-```{r }
+```{r, results="hide" }
 par(mfrow=c(2,2))
 plot(pcs_temp$harmonics[1],lwd=2,lty=1,xlab="Days",ylab="Value")
 title("First FPC of temperatures")
@@ -639,7 +638,7 @@ title("Second FPC of precipitations")
 lines(pcs_prec$harmonics[2],lwd=2,lty=1,col=color_1)
 ```
 
-Next, we have a look at the functional principal component scores (FPCSs) associated with the $9$ FPCs of both variables. We can see that the scores show the presence of groups and probably outliers in both cases.
+Next, we have a look at the functional principal component scores (FPCSs) associated with the $7, 5$ FPCs of both variables. We can see that the scores show the presence of groups and probably outliers (not detected by the depth procedure) in both cases.
 
 ```{r }
 temp_scores <- pcs_temp$scores
@@ -652,7 +651,7 @@ It is interesting to see to what extent the scores are related since they are th
 
 ```{r }
 library(corrplot)
-cor(pcs_prec$scores,pcs_temp$scores)
+#cor(pcs_prec$scores,pcs_temp$scores)
 par(mfrow=c(1,1))
 corrplot(cor(pcs_prec$scores,pcs_temp$scores))
 ```
@@ -668,7 +667,7 @@ b_mo <- cov_scores %*% diag(1/pcs_temp$values[1:3])
 b_mo
 ```
 
-Now, we proceed to estimate the bivariate functional slope $\beta$. For that, as mentioned before we take $K_m=4$ and $K_o=6$ and proceed to estimate $\beta$. Note that the surface defining $\beta$ is rough due to the effects of the eigenfunctions linked to the smallest eigenvalues which makes interpretation highly complicated. The local maxima and minima in this surface can be identified as the points of high relationship between both variables. 
+Now, we proceed to estimate the bivariate functional slope $\beta$. For that, as mentioned before we take $K_m=4$ and $K_o=3$ and proceed to estimate $\beta$. Note that the surface defining $\beta$ is rough due to the effects of the eigenfunctions linked to the smallest eigenvalues which makes interpretation highly complicated. The local maxima and minima in this surface can be identified as the points of high relationship between both variables. 
 
 ```{r }
 K_m <- 4
@@ -687,9 +686,9 @@ persp(seq(1,365,length.out=50),seq(1,365,length.out=50),eval_beta_est,
       border=color_1,main="Estimate of beta")
 ```
 
-The next step is to obtain predicted precipitations and associated functional residuals that will help us to check whether the fitting is appropriate or not. Therefore, we obtain the predicted precipitations. We compare both of them, and see that the linear model appears to predict reasonable well the precipitations except those that are more extreme.
+The next step is to obtain predicted precipitations and associated functional residuals that will help us to check whether the fitting is appropriate or not. Therefore, we obtain the predicted precipitations. We compare both of them, and see that the linear model appears to predict reasonable well the precipitations except those that are more extreme, that might as well be the potential outliers that we saw in the principal components. Since those 4 are very tight together and not alone, that might explain why the depth procedure didn't flag them.
 
-```{r }
+```{r, results="hide" }
 pred_prec <- final_smooth_daily_lprec_5_pen
 for (i in 1 : 72){
   pred_prec$fd$coefs[,i] <- pcs_prec$meanfd$coefs
@@ -707,9 +706,9 @@ title("Predicted precipitations")
 lines(pred_prec,lty=1,lwd=2,col=color_1)
 ```
 
-Next, we obtain and plot the functional residuals. Note how these residuals are centered at the function $0$ and show some of the extreme behaviors that are not well explained by the model. Then, we use the residuals to define the coefficient of determination that is given by $0.55$ which is not so high. As it can be seen in the residuals, there are a lot of functions that are well described but a few of them with very large discrepancy, as we saw in the previous plots
+Next, we obtain and plot the functional residuals. Note how these residuals are centered at the function $0$ and show some of the extreme behaviors that are not well explained by the model. Then, we use the residuals to define the coefficient of determination that is given by $0.56$ which is not so high. As it can be seen in the residuals, there are a lot of functions that are well described but a few of them with very large discrepancy (those with high precipitations), as we saw in the previous plots.
 
-```{r }
+```{r, results="hide" }
 res_prec <- final_smooth_daily_lprec_5_pen
 res_prec$fd <- final_smooth_daily_lprec_5_pen$fd - pred_prec$fd
 par(mfrow=c(1,1))
@@ -729,7 +728,9 @@ R2
 
 Carry out unsupervised classification with the methods covered in Topic 4 on the average daily log precipitations of the aemet data set and draw conclusions from the analysis.
 
-```{r}
+We will use again the final smoothing with 5 basis functions and penalized smoothing without the outlier at Navacerrada and try to find groups.
+
+```{r, results="hide"}
 # use final_smooth_daily_lprec_5_pen
 color_1 <- "deepskyblue2"
 plot(final_smooth_daily_lprec_5_pen,xlab="Day",ylab="Log precipitation (log mm)")
@@ -743,15 +744,16 @@ lines(final_smooth_daily_lprec_5_pen,lty=1,lwd=2,col=color_1)
 
 ## Methods based on basis expansions
 
-Next, we apply methods based on the coefficients of the temperatures from the Fourier basis. For that we define the matrix containing such coefficients and make a plot to show all of them. Note that now, the weather stations are the objects placed in the rows and the basis functions are the variables placed in the columns:
+Next, we apply methods based on the coefficients of the temperatures from the Fourier basis. For that we define the matrix containing such coefficients and make a plot to show all of them.
 
 ```{r }
+# Note that now, the weather stations are the objects placed in the rows and the basis functions are the variables placed in the columns:
 X <- t(final_smooth_daily_lprec_5_pen$fd$coefs)
-X
+#X
 pairs(X,pch=19,col=color_1,main="Coefficients of the basis expansions")
 ```
 
-We are going to run four different unsupervised classification methods for the data matrix $X$: 
+We are going to run four different unsupervised classification methods for the data matrix: 
 
 1. k-means.
 
@@ -761,9 +763,9 @@ We are going to run four different unsupervised classification methods for the d
 
 4. Model based clustering.
 
-First, we run k-means. For that, note that we need to select the number of groups, so that we proceed as in the Multivariate Analysis course and compare the values of the average silhouette. We need to load the `factoextra` package and fix the maximum number of groups as $4$. The plot suggests the presence of only $4$ clusters, although 2 and 3 are also feasible. Therefore, we try $G=4$ and $100$ initial solutions, and plot the resulting solution after comparison of the $100$ final solutions. The solution looks quite good:
+First, we run k-means. For that, note that we need to select the number of groups, so that we proceed as in the Multivariate Analysis course and compare the values of the average silhouette. We need to load the `factoextra` package and fix the maximum number of groups as $4$ (one less than the number of basis functions). The plot suggests the presence of only $4$ clusters, although 2 and 3 are also feasible. Therefore, we try $G=4$ and $100$ initial solutions, and plot the resulting solution after comparison of the $100$ final solutions. The solution is not perfectly defined and some of the points are not so clear. Still, the value of the silhouette (0.45) is good.
 
-```{r }
+```{r, results="hide" }
 library("factoextra")
 fviz_nbclust(X,kmeans,method="silhouette",k.max=4)
 kmeans_X <- kmeans(X,centers=4,iter.max=1000,nstart=100)
@@ -781,7 +783,7 @@ sil_kmeans_X <- silhouette(kmeans_X$cluster,dist(X,"euclidean"))
 plot(sil_kmeans_X,col=color_1)
 ```
 
-See also the map of Canada with the resulting clustering solution. Apparently, the solution separates the weather stations in the south and the north which seems reasonable.
+We can also see the map of Spain with the resulting clustering solution. Apparently, the solution separates the weather stations into which could seem cold coast climate, hot coast climate, arid climate and mountains, but it is not so clear. 
 
 ```{r }
 library(maps)
@@ -794,9 +796,9 @@ map('world',region="Spain",add=TRUE)
 points(coordinates,col=colors_kmeans_X,pch=19)
 ```
 
-Second, we run PAM. Again, we select the number of groups with the average silhouette. The plot suggests the presence of $2$ clusters as before. Therefore, we try $G=2$ and plot the resulting solution. The solution is close to the one obtained with k-means. However, the silhouette is not as good as the one given by k-means. Indeed, there are close weather stations in different groups:
+Second, we run PAM. Again, we select the number of groups with the average silhouette. The plot suggests the presence of $2$ clusters as before. Therefore, we try $G=2$ and plot the resulting solution. The solution is different to the one obtained with k-means and the sihouette is a bit higher, which is better. We can see in the map of Spain that the solution divides into northern and southern stations, which seems logical, although some points are out.
 
-```{r }
+```{r, results="hide" }
 fviz_nbclust(X,cluster::pam,method="silhouette",k.max=4)
 pam_X <- pam(X,k=2,metric="manhattan",stand=FALSE)
 colors_pam_X <- c(color_1,color_2)[pam_X$cluster]
@@ -812,9 +814,9 @@ map('world',region="Spain",add=TRUE)
 points(coordinates,col=colors_pam_X,pch=19)
 ```
 
-Third, we run agglomerative hierarchical clustering with the average linkage. For that, we need to compute initially the distances between the coefficients. We choose the Manhattan distance that somehow takes into account the presence of potential outliers. Then, we run the procedure and plot the dendogram obtained that suggest the presence of two clusters as in the previous two cases. Therefore, we try $G=2$ and plot the resulting solution. The solution is similar to the obtained with k-means:
+Third, we run agglomerative hierarchical clustering with the average linkage. For that, we need to compute initially the distances between the coefficients. We choose the Manhattan distance that somehow takes into account the presence of potential outliers. Then, we run the procedure and plot the dendogram obtained that suggest the presence of two clusters as in the previous two cases. Therefore, we try $G=2$ and plot the resulting solution. The solution is very similar to the obtained with PAM dividing north and south.
 
-```{r }
+```{r, results="hide" }
 dist_X <- daisy(X,metric="manhattan",stand=TRUE)
 average_X <- hclust(dist_X,method="average")
 plot(average_X,main="Average linkage",cex=0.8)
@@ -832,12 +834,12 @@ map('world',region="Spain",add=TRUE)
 points(coordinates,col=colors_average_X,pch=19)
 ```
 
-Fourth, we run MClust, the most popular model-based clustering method. For that, we need to load the `mclust` package and compute the value of the BIC for the all possible models with maximum number of components equal to $4$. Then, we plot the results and check that the best choice is $G=4$. Note that the function returns -BIC, so we have to select the maximum value of this quantity. Consequently, we run Mclust for the optimal solution. Mclust selects a model with $4$ clusters in which the covariance matrices are ellipsoidal and with the same eigenvectors. The solution appears to be more complex although it might have some sense. Take into account that the main goal of MClust is density estimation of the coefficients and maybe there is an effect of potential outliers.
+Fourth, we run MClust, the most popular model-based clustering method. For that, we need to load the `mclust` package and compute the value of the BIC for the all possible models with maximum number of components equal to $4$. Then, we plot the results and check that the best choice is $G=4$. Note that the function returns -BIC, so we have to select the maximum value of this quantity. Consequently, we run Mclust for the optimal solution. Mclust selects a model with $4$ clusters in which the covariance matrices are ellipsoidal and with the same eigenvectors (equal shape). The solution appears to be more complex although it might have some sense with southern hot places, mediterranian coast, northern coast but the green cluster is not so clear.
 
-```{r }
+```{r, results="hide" }
 library(mclust)
 BIC_X <- mclustBIC(X,G=1:4)
-BIC_X
+#BIC_X
 plot(BIC_X)
 Mclust_X <- Mclust(X,x=BIC_X)
 summary(Mclust_X)
@@ -850,16 +852,16 @@ pairs(X,pch=19,col=colors_Mclust_X,
 plot(final_smooth_daily_lprec_5_pen,xlab="Day",ylab="Temperature")
 title("MClust solution with the coefficients of the basis expansions")
 lines(final_smooth_daily_lprec_5_pen,lty=1,lwd=2,col=colors_Mclust_X)
-maps::map('world',ylim=c(27,45),xlim=c(-19,5))
+maps::map('world',ylim=c(25,45),xlim=c(-19,5))
 maps::map('world',region="Spain",add=TRUE)
 points(coordinates,col=colors_Mclust_X,pch=19)
 ```
 
 ## A functional k-means (k-medoids) procedure
 
-Next, we run the functional k-means (k-medoids) procedure implemented in the `fda.usc` package. For that, we have to transform the temperatures in the `fda` format to the `fda.usc` format. Then, we can run the method. The function `kmeans.fd` uses by default the Fraiman and Muniz depth to compute the set of depths and then compute the sample functional median after trimming with $\alpha=0.05$. For simplicity, we fix $G=2$ and plot the resulting solution, which is similar to the one given by k-means and agglomerative hierarchical clustering with the average linkage:
+Next, we run the functional k-means (k-medoids) procedure implemented in the `fda.usc` package. For that, we have to transform the temperatures in the `fda` format to the `fda.usc` format. Then, we can run the method. The function `kmeans.fd` uses by default the Fraiman and Muniz depth to compute the set of depths and then compute the sample functional median after trimming with $\alpha=0.05$. For simplicity, we fix $G=2$ and plot the resulting solution, which is similar to the one given by PAM and agglomerative hierarchical clustering with the average linkage: separation between north and south.
 
-```{r }
+```{r, results="hide" }
 library(fda.usc)
 tt <- lprec_argvals
 Canadian_temp_smooth <- eval.fd(tt,final_smooth_daily_lprec_5_pen$fd)
@@ -879,3 +881,298 @@ points(coordinates,col=colors_kmeansfd,pch=19)
 
 
 The tecator data set is included in the fda.usc package. Therefore, you can load the data set after loading the library fda.usc, using data(tecator). The tecator dataset contains samples of finely chopped pure meat with different moisture (water), fat and protein contents for which it is measured a 100 channel spectrum of absorbances in the wavelength range 850-1050 nm. The absorbance is a measure of the amount of light that is absorbed by the sample. The moisture (water), fat and protein contents, measured in percent, are determined by analytic chemistry. Focus on the fat content variable in tecator\$y\$Fat and define a classification variable R such that ri = 1 if the fat content is larger than 20, and ri = 2, otherwise. Therefore, we have G = 2 groups where the first group of pieces of meat that are high in fat and the second group of pieces of meat that are low in fat. Apply the supervised classification methods seen in Topic 4 to the data where the absorbance is the functional variable used to classify the classification variable R. For that, note that the absorbances are in the matrix tecator\$absorp:fdata\$data that needs to be transposed to create the basis system. Moreover, tecator\$absorp.fdata also contains the values argvals and rangeval needed to define the basis system object with the fda library. Importantly, draw conclusions from the analysis.
+
+```{r}
+library(fda.usc)
+library(fda)
+data(tecator)
+
+fat=tecator$y$Fat
+R=rep(1, times=length(fat)) # 1 high fat
+R[fat<=20]=2 # 2 low fat
+
+absorbances=tecator$absorp.fdata$data
+absorbances_rangeval=tecator$absorp.fdata$rangeval
+absorbances_argvals=tecator$absorp.fdata$argvals
+
+
+```
+
+
+
+The next step is to create a single matrix containing all boys and girls and a vector of factors that indicates whether the row in the matrix contains hogh or low fat. As we are going to use the functions in the `fda.usc` package, the matrix will have dimensions $215\times 100$, corresponding to $215$ wavelengths and $100$ observation points. As we are going to use these numbers frequently, we define $n=215$ and $J=100$.
+
+```{r, eval=FALSE}
+X <- absorbances
+#head(X)
+n <- nrow(X)
+#n
+J <- ncol(X)
+#J
+r <- as.factor(R)
+#head(r)
+```
+
+In this case, we do not smooth the data now because the functions from the `fda.usc` package that we are going to use, does not require an external smoothing.
+
+## Bootstrap methodology
+
+In this section, we develop supervised classification using the bootstrap TER. For that, we are going to follow the next steps:
+
+1. Generate uniformly at random $B$ training and test samples, where $B$ is determined later. The training sample will consist of $150$ heights (around the $70%$ of the sample pairs) and the test sample will consist of $65$ heights (around the $30%$ of the sample pairs). 
+
+2. Run the classifier for each set of training and test samples. This will give us a set of predictions of the observations in the test samples.
+
+3. With each set of predictions given by the classifier, we will obtain the TER, leading to $B$ values $TER_1,\ldots,TER_B$.
+
+4. Obtain the bootstrap TER (BTER) as the sample mean of $TER_1,\ldots,TER_B$.
+
+The supervised classification methods considered are:
+
+1. Standard methods on the FPC scores: Linear Discriminant Analysis (LDA), Quadratic Discriminant Analysis (QDA), Naïve Bayes, Neural networks, Classification trees, Random forest and Support vector machines.
+
+2. Functional logistic regression.
+
+3. Functional Generalized Additive Models (FGAMs).
+
+4. Functional k nearest neighbors.
+
+5. Functional non-parametric discrimination.
+
+6. Functional maximal depth classification.
+
+7. Functional depth-depth classification:
+
+The next code implements everything. As it is long, we summarize the steps to take and the objects that are defined. We fix the seed in order to replicate the results:
+
+1. `B` is the number of bootstrap samples. The method based on maximal depth is very time consuming. Therefore, we restrict the number of bootstrap samples to $B=100$.
+
+2. `n_train` is the number of pairs in the training samples.
+
+3. `n_test` is the number of pairs in the test samples.
+
+4. `lda_bter`, `qda_bter`, `naiveBayes_bter`, `nnet_bter`, `rpart_bter`, `randomForest_bter`, `svm_bter`, `glm_bter`, `gsam_bter`,  `knn_bter`, `np_bter`, `depth_bter` and `DD_bter`.
+are the vectors that contains the value of the TER for each method and bootstrap sample.
+
+5. In the first part of the loop, we define the training and test samples.
+
+6. In the second part of the loop, we define the training and test samples as `fdata` objects (the heights) and as data.frame objects (the gender).
+
+7. In the third part of the loop, we create a list with the training sample and another with the test sample.
+
+8. In the fourth part of the loop, we create the FPC basis based on a bspline basis. For simplicity, we take $K=L=10$ bsplines and FPCs.
+
+9. In the last parts of the loop, all the classifiers are run and the returns are saved in the corresponding vector.
+
+```{r, eval=FALSE}
+set.seed(2)
+B <- 100
+n_train <- 150
+n_test <- 65
+lda_bter <- qda_bter <- naiveBayes_bter <- nnet_bter <- rpart_bter <- vector(mode="numeric",length=B)
+randomForest_bter <- svm_bter <- glm_bter <- gsam_bter <- vector(mode="numeric",length=B)
+knn_bter <- np_bter <- depth_bter <- DD_bter <- vector(mode="numeric",length=B)
+for (b in 1 : B){
+  
+  # Define the training and test samples
+  
+  train <- sample(1:215,150)
+  X_train <- X[train,]
+  r_train <- r[train]
+  X_test <- X[-train,]
+  r_test <- r[-train]
+  
+  # Define the training and test samples as fdata objets (the heights) 
+  # and as data.frame objects (the gender)
+  
+  X_train_func <- fdata(X_train,argvals=absorbances_argvals,rangeval=absorbances_rangeval)
+  X_test_func <- fdata(X_test,argvals=absorbances_argvals,rangeval=absorbances_rangeval)
+  r_train_df <- data.frame(r_train)
+  r_test_df <- data.frame(r_test)
+  
+  # Create a list with the training sample and another with the test sample
+  
+  train_pairs <- list("df"=r_train_df,"x"=X_train_func)
+  test_fd <- list("x"=X_test_func)
+  
+  # Create the FPC basis
+  
+  basis <- create.bspline.basis(rangeval=absorbances_rangeval,nbasis=10)
+  basis_x <- create.pc.basis(X_train_func,l=1:10,basis=basis)
+  
+  # Run LDA
+  
+  fda_class_lda <- classif.lda(r_train~x,data=train_pairs,basis.x=basis_x)
+  pred_test <- predict(fda_class_lda,test_fd,type="class")
+  lda_bter[b] <- 1 - sum(r_test==pred_test)/n_test
+  
+  # Run QDA
+  
+  fda_class_qda <- classif.qda(r_train~x,data=train_pairs,basis.x=basis_x)
+  pred_test <- predict(fda_class_qda,test_fd,type="class")
+  qda_bter[b] <- 1 - sum(r_test==pred_test)/n_test
+  
+  # Run Naïve Bayes
+  
+  fda_class_naiveBayes <- classif.naiveBayes(r_train~x,data=train_pairs,basis.x=basis_x)
+  pred_test <- predict(fda_class_naiveBayes,test_fd,type="class")
+  naiveBayes_bter[b] <- 1 - sum(r_test==pred_test)/n_test
+  
+  # Run neural networks
+  
+  fda_class_nnet <- classif.nnet(r_train~x,data=train_pairs,basis.x=basis_x)
+  pred_test <- predict(fda_class_nnet,test_fd,type="class")
+  nnet_bter[b] <- 1 - sum(r_test==pred_test)/n_test
+  
+  # Run classification trees
+  
+  fda_class_rpart <- classif.rpart(r_train~x,data=train_pairs,basis.x=basis_x)
+  pred_test <- predict(fda_class_rpart,test_fd,type="class")
+  rpart_bter[b] <- 1 - sum(r_test==pred_test)/n_test
+  
+  # Run random forest
+  
+  fda_class_randomForest <- classif.randomForest(r_train~x,data=train_pairs,basis.x=basis_x)
+  pred_test <- predict(fda_class_randomForest,test_fd,type="class")
+  randomForest_bter[b] <- 1 - sum(r_test==pred_test)/n_test
+
+  # Run support vector machines
+    
+  fda_class_svm <- classif.svm(r_train~x,data=train_pairs,basis.x=basis_x)
+  pred_test <- predict(fda_class_svm,test_fd,type="class")
+  svm_bter[b] <- 1 - sum(r_test==pred_test)/n_test
+
+  # Run logistic regression
+  
+  fda_class_glm <- classif.glm(r_train~x,data=train_pairs,basis.x=basis_x)
+  pred_test <- predict(fda_class_glm,test_fd,type="class")
+  glm_bter[b] <- 1 - sum(r_test==pred_test)/n_test
+
+  # Run generalized additive models
+  
+  fda_class_gsam <- classif.gsam(r_train~s(x,k=3),data=train_pairs,basis.x=basis_x)
+  pred_test <- predict(fda_class_gsam,test_fd,type="class")
+  gsam_bter[b] <- 1 - sum(r_test==pred_test)/n_test
+  
+  # Run k nearest neighbors
+  
+  h <- seq(3,15,by=2)
+  fda_class_knn <- classif.knn(r_train,X_train,h)
+  pred_test <- predict(fda_class_knn,X_test,type="class")
+  knn_bter[b] <- 1 - sum(r_test==pred_test)/n_test
+  
+  # Run non-parametric discrimination
+  
+  fda_class_np <- classif.np(r_train,X_train)
+  pred_test <- predict(fda_class_np,X_test,type="class")
+  np_bter[b] <- 1 - sum(r_test==pred_test)/n_test
+  
+  # Run maximal depth classification
+  
+  fda_class_depth <- classif.depth(r_train,X_train_func,X_test_func)
+  depth_bter[b] <- 1 - sum(r_test==fda_class_depth$group.pred)/n_test
+  
+  # Run depth-depth classification
+  
+  fda_class_DD <- classif.DD(r_train,X_train_func,control=list(draw=FALSE))
+  pred_test <- predict(fda_class_DD,test_fd,type="class")
+  DD_bter[b] <- 1 - sum(r_test==pred_test)/n_test
+
+}
+```
+
+Finally, we obtain the sample means of the TER for each model and bootstrap sample. We show the results in a table and a boxplot. Note that the best results are attained by LDA, SVM, kNN and NP. Note that these are the methods that appears to work better for this example, but other methods may be better for other data sets.
+
+```{r, eval=FALSE}
+color_1 <- "deepskyblue2"
+bter_lda <- mean(lda_bter)
+bter_qda <- mean(qda_bter)
+bter_naiveBayes <- mean(naiveBayes_bter)
+bter_nnet <- mean(nnet_bter)
+bter_rpart <- mean(rpart_bter)
+bter_randomForest <- mean(randomForest_bter)
+bter_svm <- mean(svm_bter)
+bter_glm <- mean(glm_bter)
+bter_gsam <- mean(gsam_bter)
+bter_knn <- mean(knn_bter)
+bter_np <- mean(np_bter)
+bter_depth <- mean(depth_bter)
+bter_DD <- mean(DD_bter)
+BTERS <- c(bter_lda,bter_qda,bter_naiveBayes,bter_nnet,bter_rpart,
+           bter_randomForest,bter_svm,bter_glm,bter_gsam,bter_knn,
+           bter_np,bter_depth,bter_DD)
+names(BTERS) <- c("LDA","QDA","NB","NNs","CT","RF",
+                  "SVM","LR","GAM","kNN","NP","MD","DD")
+BTERS
+ALL.BTERS <- cbind(lda_bter,qda_bter,naiveBayes_bter,nnet_bter,rpart_bter,
+                   randomForest_bter,svm_bter,glm_bter,gsam_bter,knn_bter,
+                   np_bter,depth_bter,DD_bter)
+colnames(ALL.BTERS) <- c("LDA","QDA","NB","NNs","CT","RF",
+                         "SVM","LR","GAM","kNN","NP","MD","DD")
+boxplot(ALL.BTERS,col=color_1,main="Bootstrap TER")
+```
+
+We can see that the methods with the lowest Test Error Rate are LDA, QDA, neural networks, linear regression and generalize additive models, all of them with similar performance, notably better than the rest and with lower variance.
+
+
+![ ](/Users/arpri/OneDrive/Escritorio/resultadosejercicio3Funcional.PNG)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
